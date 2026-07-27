@@ -11,10 +11,10 @@ The name is the same joke as *Projectile* (project + suffix), minus the ordnance
 
 - The day is one gapless track of blocks, edited like a video timeline: split at a marker, merge at a seam, drag blocks and boundaries
 - Live tracking (start / switch / break / stop, several sessions per day) or rebuild a forgotten day from scratch
-- Positions nest two levels (project → work package) with an orthogonal Factura / Intern flag, inherited and overridable
+- Positions nest two levels (project → work package) with an orthogonal Factura / Intern flag and a colour, both inherited and overridable
 - Enforces the German break rule properly: 30 min *by* 6 h of work, 45 min by 9 h, in chunks of ≥15 min, checked chronologically
 - Week view with a 7-day strip, hours per project, per-day totals and the Factura / Intern split
-- Transfer to Projectile merges consecutive blocks into rows, then walks you through cell by cell (paste → Tab → ↵)
+- Transfer to Projectile merges consecutive blocks into rows — optional, with a configurable separator between the merged descriptions — then walks you through cell by cell (paste → Tab → ↵)
 - Calendar export (`.ics`), JSON backup, German / English, themeable
 
 ## how to use it

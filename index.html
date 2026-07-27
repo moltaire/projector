@@ -104,11 +104,21 @@
   .card h3{margin:0 0 10px; font-size:11px; letter-spacing:.09em; text-transform:uppercase; color:var(--dim); font-weight:600}
   .field{display:block; margin-bottom:9px}
   .field label{display:block; font-size:11px; color:var(--dim); margin-bottom:3px}
-  select,input[type=text],input[type=time],input[type=number]{
+  select,input[type=text],input[type=time],input[type=number],textarea{
     width:100%; background:var(--card2); border:1px solid var(--line); color:var(--text);
     border-radius:var(--radius-sm); padding:8px; font-family:inherit; font-size:13px;
   }
-  select:focus,input:focus{outline:none; border-color:var(--accent)}
+  select:focus,input:focus,textarea:focus{outline:none; border-color:var(--accent)}
+  /* Descriptions are the payload of the whole tool — the box grows with the text instead of
+     hiding it in a one-line viewport. Height is set from scrollHeight on every input. */
+  .desc-wrap{position:relative}
+  .desc-wrap textarea{display:block; resize:none; overflow:hidden; line-height:1.45; min-height:34px; max-height:40vh}
+  .sugg{position:absolute; left:0; right:0; top:100%; z-index:40; margin-top:2px;
+    background:var(--card); border:1px solid var(--line); border-radius:var(--radius-sm);
+    box-shadow:0 8px 22px rgba(0,0,0,.28); max-height:172px; overflow-y:auto}
+  .sugg div{padding:6px 8px; font-size:12.5px; cursor:pointer; white-space:nowrap;
+    overflow:hidden; text-overflow:ellipsis}
+  .sugg div.on,.sugg div:hover{background:var(--accent-ghost)}
   .row{display:flex; gap:8px}
   .row>*{flex:1}
   .nowbtns{display:flex; gap:8px; margin-top:10px}
@@ -128,7 +138,11 @@
   .modal h2{margin:0 0 14px; font-size:16px}
   .sub-h{font-size:11px; letter-spacing:.09em; text-transform:uppercase; color:var(--dim); margin:16px 0 8px}
   .modal.wide{width:min(820px,95vw)}
-  .ptable{display:grid; grid-template-columns:52px 92px minmax(140px,1fr) 124px 108px 36px 26px; gap:7px; align-items:center}
+  .ptable{display:grid; grid-template-columns:52px 92px minmax(140px,1fr) 124px 108px 58px 26px; gap:7px; align-items:center}
+  .colcell{display:flex; align-items:center; gap:1px; min-width:0}
+  .colcell input[type=color]{flex:1; min-width:0}
+  .colcell input.inh{border-style:dashed !important; opacity:.85}
+  .prow.arch input,.prow.arch select{opacity:.5}
   .ptable.add{margin-top:0}
   .ptable .ph{font-size:10px; letter-spacing:.08em; text-transform:uppercase; color:var(--dim); font-weight:600; padding-bottom:2px}
   .prow{display:contents}
@@ -302,7 +316,6 @@
   </div>
 </main>
 <div id="overlay"><div class="modal" id="modal"></div></div>
-<datalist id="desc-list"></datalist>
 <div id="toast"></div>
 <input type="file" id="file-in" accept="application/json,.json" hidden>
 
@@ -314,6 +327,7 @@ const PPM=1.5;                 // pixels per minute on the timeline
 const DAY=86400000;
 let state, selectedDate, selectedId=null, playhead=null, viewMode='day';
 let curWinStart=0;             // window start in minutes-of-day (set during render)
+let showArchivedPos=false;     // positions manager only, deliberately not persisted
 const drag={active:false};
 
 const el=id=>document.getElementById(id);
@@ -340,7 +354,14 @@ const I18N={
     breakNone:rem=>`No break due yet — ${rem} of work until the 30-min break is required.`,
     breakOkBy:(min,mark)=>`Break OK — ${min} min taken before the ${mark} mark.`, breakOk:'Break OK.',
     breakLate:(thr,have,need)=>`Break too late — worked past ${thr}h with only ${have} min of break. Projectile requires ${need} min taken <b>by</b> ${thr}h of work, not at the end.`,
-    addPosition:'Add position', codePh:'CODE', labelPh:'Label', add:'Add', exportW:'Export', importW:'Import', done:'Done', locked:'locked', archive:'Archive', language:'Language', grid:'Grid / snap', dailyTarget:'Daily target (h)',
+    addPosition:'Add position', codePh:'CODE', labelPh:'Label', add:'Add', exportW:'Export', importW:'Import', done:'Done', locked:'locked', archive:'Archive', language:'Language', grid:'Grid / snap', dailyTarget:'Daily target',
+    unarchive:'Restore', showArchived:'Show archived', colorInherited:'Inherited from the project — pick a colour to override',
+    colorReset:'Back to the project colour',
+    targetHint:'8, 8.2 or 8:12 — a 41 h week is 8:12 a day',
+    snapLive:'Snap live tracking to the grid',
+    snapLiveHint:'Start, Switch, Break and Stop round to the grid above. When rounding would swallow a block, the exact time is kept.',
+    mergeRows:'Merge consecutive blocks', mergeRowsHint:'One export row per run of same-position blocks instead of one per block.',
+    descSep:'Description separator', descSepHint:'Placed between the descriptions of merged blocks.',
     dataNote:'Everything lives in this browser. Back up regularly — clearing browsing data will erase it.',
     exportBackup:'Export backup (.json)', importBackup:'Import backup',
     stillRunning:'Still running?', staleText:(when,hrs)=>`A block has been running since <b>${when}</b> (${hrs}h). The app was probably closed or asleep.`,
@@ -386,7 +407,7 @@ const I18N={
     warnBreak:'Break rule not met — check before booking.',
     exportSettings:'Export', dateFmt:'Date format', durFmt:'Duration format', columns:'Columns',
     durHM:'HH:MM', durDec:'Decimal hours',
-    viewDay:'Day', viewWeek:'Week', week:'Week', weekTarget:'Weekly target (h)',
+    viewDay:'Day', viewWeek:'Week', week:'Week', weekTarget:'Weekly target',
     wkRange:(a,b)=>`${a} – ${b}`, byPosition:'By position', perDay:'Per day',
     weekTotal:'Week total', over:'over', under:'under', noDataWeek:'Nothing tracked this week.',
     dayNames:['Mon','Tue','Wed','Thu','Fri','Sat','Sun'], complWarnShort:'break!',
@@ -415,7 +436,14 @@ const I18N={
     breakNone:rem=>`Noch keine Pause fällig — noch ${rem} Arbeit bis zur 30-Min-Pause.`,
     breakOkBy:(min,mark)=>`Pause OK — ${min} Min vor der ${mark}-Grenze genommen.`, breakOk:'Pause OK.',
     breakLate:(thr,have,need)=>`Pause zu spät — über ${thr} h gearbeitet mit nur ${have} Min Pause. Projectile verlangt ${need} Min <b>bis</b> ${thr} h Arbeit, nicht am Ende.`,
-    addPosition:'Position hinzufügen', codePh:'KÜRZEL', labelPh:'Bezeichnung', add:'Hinzufügen', exportW:'Export', importW:'Import', done:'Fertig', locked:'gesperrt', archive:'Archivieren', language:'Sprache', grid:'Raster / Einrasten', dailyTarget:'Tagessoll (Std.)',
+    addPosition:'Position hinzufügen', codePh:'KÜRZEL', labelPh:'Bezeichnung', add:'Hinzufügen', exportW:'Export', importW:'Import', done:'Fertig', locked:'gesperrt', archive:'Archivieren', language:'Sprache', grid:'Raster / Einrasten', dailyTarget:'Tagessoll',
+    unarchive:'Wiederherstellen', showArchived:'Archivierte anzeigen', colorInherited:'Vom Projekt geerbt — Farbe wählen, um sie zu überschreiben',
+    colorReset:'Zurück zur Projektfarbe',
+    targetHint:'8, 8,2 oder 8:12 — eine 41-Std.-Woche sind 8:12 pro Tag',
+    snapLive:'Live-Erfassung aufs Raster runden',
+    snapLiveHint:'Start, Wechsel, Pause und Stopp rasten auf das Raster oben ein. Würde das Runden einen Block verschlucken, bleibt die genaue Zeit stehen.',
+    mergeRows:'Aufeinanderfolgende Blöcke zusammenfassen', mergeRowsHint:'Eine Exportzeile je Folge gleicher Positionen statt je Block.',
+    descSep:'Trennzeichen für Beschreibungen', descSepHint:'Steht zwischen den Beschreibungen zusammengefasster Blöcke.',
     dataNote:'Alle Daten liegen in diesem Browser. Sichere regelmäßig — beim Löschen der Browserdaten gehen sie verloren.',
     exportBackup:'Sicherung exportieren (.json)', importBackup:'Sicherung importieren',
     stillRunning:'Läuft noch?', staleText:(when,hrs)=>`Ein Block läuft seit <b>${when}</b> (${hrs} h). Die App war wohl geschlossen oder im Ruhezustand.`,
@@ -461,7 +489,7 @@ const I18N={
     warnBreak:'Pausenregel nicht erfüllt — vor dem Buchen prüfen.',
     exportSettings:'Export', dateFmt:'Datumsformat', durFmt:'Dauerformat', columns:'Spalten',
     durHM:'HH:MM', durDec:'Dezimalstunden',
-    viewDay:'Tag', viewWeek:'Woche', week:'KW', weekTarget:'Wochensoll (Std.)',
+    viewDay:'Tag', viewWeek:'Woche', week:'KW', weekTarget:'Wochensoll',
     wkRange:(a,b)=>`${a} – ${b}`, byPosition:'Nach Position', perDay:'Pro Tag',
     weekTotal:'Wochensumme', over:'über', under:'unter', noDataWeek:'Diese Woche nichts erfasst.',
     dayNames:['Mo','Di','Mi','Do','Fr','Sa','So'], complWarnShort:'Pause!',
@@ -526,18 +554,22 @@ function defaults(){
     version:1,
     settings:{dayStartHour:7,dayEndHour:20,snapMin:15,targetHours:8,staleHours:10,lang:'de',
       exportCols:['start','end','pos','desc'],   // date/dur off by default — Projectile derives them
-      dateFmt:'dd.mm.yyyy', durFmt:'hm', weekTargetHours:40},
+      dateFmt:'dd.mm.yyyy', durFmt:'hm', weekTargetHours:40,
+      snapLive:true,        // live start/switch/break/stop land on the grid, like every other edit
+      mergeRows:true,       // collapse consecutive same-position blocks into one export row
+      descSep:';'},         // ...and join their descriptions with this
     positions:[
       // Two levels: top-level entries are projects (containers); their children are the
       // bookable work packages. `billable` is inherited when null.
       {id:'pause', code:'PAUSE', label:'Pause',         color:'#d49a4a', archived:false, reserved:true, parentId:null, billable:false, hotkey:9},
       {id:'pint',  code:'INT',   label:'Intern',        color:'#6b7a8f', archived:false, parentId:null,   billable:false},
-      {id:'padm',  code:'ADMIN', label:'Admin & E-Mail',color:'#6b7a8f',  archived:false, parentId:'pint', billable:null, hotkey:1},
+      // color:null on a child means "inherit from the project" — see posColor().
+      {id:'padm',  code:'ADMIN', label:'Admin & E-Mail',color:null,     archived:false, parentId:'pint', billable:null, hotkey:1},
       {id:'palpha',code:'PRJ-A', label:'Project Alpha', color:'#5e7ce0', archived:false, parentId:null,   billable:true},
-      {id:'pa_dev',code:'PRJ-A-DEV',  label:'Development', color:'#5e7ce0', archived:false, parentId:'palpha', billable:null, hotkey:2},
+      {id:'pa_dev',code:'PRJ-A-DEV',  label:'Development', color:null,  archived:false, parentId:'palpha', billable:null, hotkey:2},
       {id:'pa_mtg',code:'PRJ-A-MEET', label:'Meetings',    color:'#7b93e8',archived:false, parentId:'palpha', billable:null, hotkey:3},
       {id:'pbeta', code:'PRJ-B', label:'Project Beta',  color:'#4fa3a1', archived:false, parentId:null,   billable:true},
-      {id:'pb_int',code:'PRJ-B-INT',  label:'Integration', color:'#4fa3a1',archived:false, parentId:'pbeta',  billable:null, hotkey:4}
+      {id:'pb_int',code:'PRJ-B-INT',  label:'Integration', color:null,   archived:false, parentId:'pbeta',  billable:null, hotkey:4}
     ],
     blocks:[]
   };
@@ -556,7 +588,27 @@ function load(){
   if(!state.positions.some(p=>p.id==='pause')) state.positions.unshift(defaults().positions[0]);
   state.settings=Object.assign({},defaults().settings,state.settings||{});
   lang=S().lang||'de';
-  if(ensureHotkeys()) save();
+  if(migratePositions()|ensureHotkeys()) save();
+}
+// One-time repairs of stores written before colour inheritance and cascading archive existed.
+function migratePositions(){
+  let changed=false;
+  state.positions.forEach(p=>{
+    const par=projectOf(p); if(!par||!p.color) return;
+    // Colours used to be *copied* from the project at creation time. Where the copy is still
+    // untouched, drop it so the child starts tracking its project; a real override survives.
+    const c=p.color.toLowerCase();
+    if(c===mix(par.color||'#5e7ce0','#ffffff',0.18).toLowerCase() || c===(par.color||'').toLowerCase()){
+      p.color=null; changed=true;
+    }
+  });
+  // Archiving a project used to leave its packages behind, unarchived and still bookable.
+  state.positions.forEach(p=>{
+    if(p.archived) return;
+    const par=projectOf(p);
+    if(par&&par.archived){ p.archived=true; p.hotkey=null; changed=true; }
+  });
+  return changed;
 }
 function save(){ localStorage.setItem(KEY,JSON.stringify(state)); }
 
@@ -573,6 +625,21 @@ function snapMin(m){ const s=S().snapMin; return Math.round(m/s)*s; }
 function snapMs(ms){ return dayStartMs()+snapMin((ms-dayStartMs())/60000)*60000; }
 function fmtHM(ms){ const d=new Date(ms); return pad(d.getHours())+':'+pad(d.getMinutes()); }
 function fmtDur(ms){ const m=Math.max(0,Math.round(ms/60000)); return Math.floor(m/60)+':'+pad(m%60); }
+// Targets are stored as decimal hours but a contract is written as 41 h / week = 8:12 a day.
+// Accept both notations (and the German decimal comma); render the stored value as HH:MM.
+function parseHours(s){
+  s=(s||'').trim().replace(',','.');
+  if(!s) return null;
+  const hm=/^(\d{1,3}):([0-5]?\d)$/.exec(s);
+  if(hm) return +hm[1]+ (+hm[2])/60;
+  if(!/^\d*\.?\d+$/.test(s)) return null;
+  const v=parseFloat(s);
+  return isFinite(v)&&v>=0 ? v : null;
+}
+function fmtHours(h){
+  const m=Math.round((+h||0)*60);
+  return Math.floor(m/60)+':'+pad(m%60);
+}
 function parseHMok(s){ const m=/^(\d{1,2}):(\d{2})$/.exec((s||'').trim()); if(!m)return null; const h=+m[1],mi=+m[2]; if(h>23||mi>59)return null; const d=new Date(dayStartMs()); d.setHours(h,mi,0,0); return d.getTime(); }
 
 // DST-safe date arithmetic — never add DAY to a timestamp to move by days.
@@ -602,6 +669,23 @@ function childrenOf(id){ return state.positions.filter(p=>p.parentId===id&&!p.ar
 function isBookable(p){ return !!p && childrenOf(p.id).length===0; }
 function projectOf(p){ return p&&p.parentId ? posById(p.parentId) : null; }
 function rootOf(p){ return projectOf(p)||p; }
+// Archiving a project must take its work packages with it. Checking only p.archived left
+// orphans behind: still unarchived, still bookable, grouped under a project that was gone
+// from the manager — so a deleted project kept polluting every picker.
+function posVisible(p){
+  if(!p||p.archived) return false;
+  const par=projectOf(p);
+  return par ? posVisible(par) : true;
+}
+// Colour is inherited, not copied: a child without its own colour tracks the project, so
+// recolouring a project recolours the whole tree. An explicit colour on the child wins.
+function posColor(p){
+  if(!p) return 'var(--line)';
+  if(p.color) return p.color;
+  const par=projectOf(p);
+  return par ? mix(posColor(par),'#ffffff',0.18) : '#5e7ce0';
+}
+function inheritedColor(p){ const par=projectOf(p); return par?mix(posColor(par),'#ffffff',0.18):null; }
 function pathLabel(p){ const par=projectOf(p); return par ? `${par.label} › ${p.label}` : (p?p.label:''); }
 // Real project/package names are long. Render them as two spans so the *project* prefix
 // absorbs the truncation and the work package — the informative half — stays readable.
@@ -638,13 +722,13 @@ function splitBillable(blocks){
 
 /* --- hotkeys: a stable property of the position, never derived from sort order, so
    muscle memory can't silently start booking to the wrong project. --- */
-function posByHotkey(n){ return state.positions.find(p=>p.hotkey===n&&!p.archived&&isBookable(p)); }
+function posByHotkey(n){ return state.positions.find(p=>p.hotkey===n&&posVisible(p)&&isBookable(p)); }
 function freeHotkey(){ for(let i=1;i<=9;i++) if(!posByHotkey(i)) return i; return null; }
 function ensureHotkeys(){
   let changed=false;
   // Real projects claim the low digits first; the reserved "Pause" takes what's left, so an
   // upgrading store doesn't hand slot 1 to a break.
-  state.positions.filter(p=>!p.archived&&!p.hotkey&&isBookable(p))
+  state.positions.filter(p=>posVisible(p)&&!p.hotkey&&isBookable(p))
     .sort((a,b)=> (a.reserved?1:0)-(b.reserved?1:0))
     .forEach(p=>{ const n=freeHotkey(); if(n){ p.hotkey=n; changed=true; } });
   return changed;
@@ -652,7 +736,7 @@ function ensureHotkeys(){
 
 /* ============================ rendering ============================ */
 function render(){
-  renderHeader(); renderDescList();
+  renderHeader();
   const wk=viewMode==='week';
   el('timeline').hidden=wk; el('weekview').hidden=!wk;
   if(wk){ renderWeek(); }
@@ -685,17 +769,19 @@ function usageCounts(){
   const m={}; state.blocks.forEach(b=>{ if(b.positionId) m[b.positionId]=(m[b.positionId]||0)+1; }); return m;
 }
 // Only leaves are bookable — containers never appear in a picker.
-function pickerPositions(){
-  const used=new Set(state.blocks.map(b=>b.positionId));
+// Archived positions are offered only when `keep` is the block's current value: the select
+// must still be able to *display* a historical booking without inviting new ones. Anything
+// wider (e.g. "used anywhere, ever") resurrects every position you have ever deleted.
+function pickerPositions(keep){
   const cnt=usageCounts();
   return state.positions
-    .filter(p=>(!p.archived||used.has(p.id)) && isBookable(p))
+    .filter(p=>(posVisible(p)||p.id===keep) && isBookable(p))
     .sort((a,b)=> (a.hotkey||99)-(b.hotkey||99) || ((cnt[b.id]||0)-(cnt[a.id]||0)) || pathLabel(a).localeCompare(pathLabel(b)));
 }
 // Grouped by project so the native select still reads as a tree.
 function posOptions(sel){
   let h='<option value=""'+(sel?'':' selected')+'>— '+t('unlabeled')+' —</option>';
-  const items=pickerPositions(), seen=new Set();
+  const items=pickerPositions(sel), seen=new Set();
   const opt=p=>`<option value="${p.id}"${p.id===sel?' selected':''}>${esc(p.label)}${p.reserved?' ⏸':''}</option>`;
   items.filter(p=>!p.parentId).forEach(p=>{ h+=opt(p); seen.add(p.id); });
   const groups={};
@@ -726,7 +812,7 @@ function renderTimeline(){
     const top=(minOfDay(b.start)-minM)*PPM, ht=Math.max(13,(minOfDay(bEnd(b))-minOfDay(b.start))*PPM);
     const p=posById(b.positionId);
     const cls='block'+(b.positionId?'':' unlabeled')+(b.id===selectedId?' sel':'')+(b.end==null?' running':'');
-    const style=`top:${top}px;height:${ht}px;${p?`background:${p.color};`:''}`;
+    const style=`top:${top}px;height:${ht}px;${p?`background:${posColor(p)};`:''}`;
     const prevAbut=i>0 && Math.abs(blocks[i-1].end-b.start)<1000;
     const nextAbut=i<blocks.length-1 && Math.abs(b.end-blocks[i+1].start)<1000;
     const rzTop=(!prevAbut && ht>=24)?'<div class="rz rz-top"></div>':'';
@@ -764,7 +850,11 @@ function renderNow(){
   if(run){
     c.innerHTML=`<h3>${t('nowTracking')}</h3>
       <div class="field"><label>${t('position')}</label><select id="now-pos">${posOptions(run.positionId)}</select></div>
-      <div class="field"><label>${t('description')}</label><input type="text" id="now-desc" list="desc-list" value="${esc(run.description||'')}" placeholder="${t('descPh')}"></div>
+      <div class="field"><label>${t('description')}</label>
+        <div class="desc-wrap">
+          <textarea id="now-desc" rows="1" spellcheck="false" placeholder="${t('descPh')}">${esc(run.description||'')}</textarea>
+          <div class="sugg" id="now-sugg" hidden></div>
+        </div></div>
       <div class="elapsed tabnum" id="now-elapsed">${fmtDur(now()-run.start)}</div>
       <div class="dim tabnum">${t('since',fmtHM(run.start))}</div>
       <div class="nowbtns">
@@ -774,8 +864,12 @@ function renderNow(){
       </div>
       <div class="hint" style="margin-top:8px"><a href="#" id="now-help" style="color:var(--accent-bright)">${t('help')}</a></div>`;
     el('now-pos').onchange=e=>{ run.positionId=e.target.value||null; save(); renderTimeline(); renderTotals(); };
-    el('now-desc').oninput=e=>{ run.description=e.target.value; save(); renderTimeline(); };
-    el('now-desc').onkeydown=e=>{ if(e.key==='Enter'){ e.preventDefault(); e.target.blur(); } };
+    const nta=el('now-desc');
+    growDesc(nta); closeSugg();
+    nta.oninput=e=>{ run.description=e.target.value; growDesc(e.target); openSugg(el('now-sugg'),e.target.value,v=>{ run.description=v; nta.value=v; growDesc(nta); save(); renderTimeline(); }); save(); renderTimeline(); };
+    nta.onblur=()=>setTimeout(closeSugg,120);
+    nta.onkeydown=e=>{ if(suggKey(e)) return;
+      if(e.key==='Enter'||e.key==='Escape'){ e.preventDefault(); closeSugg(); e.target.blur(); } };
     el('btn-switch').onclick=()=>switchTask();
     el('btn-break').onclick=()=>breakNow();
     el('btn-stop').onclick=()=>stopDay();
@@ -798,13 +892,17 @@ function renderEditor(){
   const un=unlabeledBlocks().length;
   const chips=pickerPositions().filter(p=>p.hotkey).sort((a,b2)=>a.hotkey-b2.hotkey).map(p=>
     `<button class="hk${p.id===b.positionId?' on':''}" data-hk="${p.id}" title="${esc(pathLabel(p))}">
-       <span class="n">${p.hotkey}</span><span class="sw" style="background:${p.color}"></span><span class="t">${esc(chipLabel(p))}</span>
+       <span class="n">${p.hotkey}</span><span class="sw" style="background:${posColor(p)}"></span><span class="t">${esc(chipLabel(p))}</span>
      </button>`).join('');
   c.innerHTML=`<h3>${t('selectedBlock')}</h3>
     <div class="prog-lbl">${un?t('unlabeledLeft',un):t('allLabeled')}</div>
     <div class="hk-wrap">${chips}</div>
     <div class="field"><label>${t('position')}</label><select id="ed-pos">${posOptions(b.positionId)}</select></div>
-    <div class="field"><label>${t('description')}</label><input type="text" id="ed-desc" list="desc-list" value="${esc(b.description||'')}"></div>
+    <div class="field"><label>${t('description')}</label>
+      <div class="desc-wrap">
+        <textarea id="ed-desc" rows="1" spellcheck="false">${esc(b.description||'')}</textarea>
+        <div class="sugg" id="ed-sugg" hidden></div>
+      </div></div>
     <div class="row">
       <div class="field"><label>${t('start')}</label><input type="text" id="ed-start" inputmode="numeric" placeholder="HH:MM" value="${fmtHM(b.start)}"></div>
       <div class="field"><label>${t('end')}</label>${running?`<input type="text" value="${t('nowWord')}" disabled>`:`<input type="text" id="ed-end" inputmode="numeric" placeholder="HH:MM" value="${fmtHM(b.end)}">`}</div>
@@ -816,16 +914,21 @@ function renderEditor(){
     </div>
     <div class="hint">${t('editorHint')}</div>`;
   el('ed-pos').onchange=e=>{ b.positionId=e.target.value||null; save(); renderTimeline(); renderTotals(); };
-  el('ed-desc').oninput=e=>{ b.description=e.target.value; save(); renderTimeline(); };
+  const ta=el('ed-desc');
+  growDesc(ta); closeSugg();
+  ta.oninput=e=>{ b.description=e.target.value; growDesc(e.target); openSugg(el('ed-sugg'),e.target.value,v=>{ b.description=v; ta.value=v; growDesc(ta); save(); renderTimeline(); }); save(); renderTimeline(); };
   c.querySelectorAll('[data-hk]').forEach(n=>n.onclick=()=>{
     b.positionId=n.dataset.hk; save(); render();
   });
-  el('ed-desc').onkeydown=e=>{
+  ta.onblur=()=>setTimeout(closeSugg,120);          // let a click on a suggestion land first
+  ta.onkeydown=e=>{
+    if(suggKey(e)) return;
     if(e.key==='Enter'){
-      e.preventDefault(); e.target.blur();
+      // Enter commits, as before — a newline would be a lie, since the export is one cell.
+      e.preventDefault(); closeSugg(); e.target.blur();
       if(e.metaKey||e.altKey||e.ctrlKey) gotoNextUnlabeled();     // commit + next open block
-    } else if(e.key==='Escape'){ e.preventDefault(); e.target.blur(); }
-    else if(e.key==='Tab'){ e.preventDefault(); e.target.blur(); gotoBlock(e.shiftKey?-1:1); }
+    } else if(e.key==='Escape'){ e.preventDefault(); closeSugg(); e.target.blur(); }
+    else if(e.key==='Tab'){ e.preventDefault(); closeSugg(); e.target.blur(); gotoBlock(e.shiftKey?-1:1); }
   };
   el('ed-start').onchange=e=>{ const v=parseHMok(e.target.value); if(v==null){ renderEditor(); return; } setStart(b,v); };
   if(!running) el('ed-end').onchange=e=>{ const v=parseHMok(e.target.value); if(v==null){ renderEditor(); return; } setEnd(b,v); };
@@ -862,7 +965,7 @@ function renderTotals(){
   });
   const unlabeled=blocks.filter(b=>!b.positionId).length;
   let rows=Object.entries(per).sort((a,b)=>b[1]-a[1]).map(([k,v])=>{
-    const p=posById(k); const sw=p?p.color:'var(--line)'; const lab=p?p.label:t('unlabeled');
+    const p=posById(k); const sw=p?posColor(p):'var(--line)'; const lab=p?p.label:t('unlabeled');
     return `<div class="tline"><span><span class="sw" style="background:${sw}"></span>${esc(lab)}</span><span class="tabnum">${fmtDur(v)}</span></div>`;
   }).join('');
   // compliance — break must be TAKEN BY the 6h/9h mark, not summed at day's end
@@ -882,7 +985,7 @@ function renderTotals(){
   const target=S().targetHours;
   c.innerHTML=`<h3>${t('totals')}</h3>${rows||`<p class="dim" style="margin:0">${t('noBlocks')}</p>`}
     ${billSplitHtml(blocks)}
-    <div class="ttot"><span>${t('work')}</span><span class="tabnum">${fmtDur(work)} / ${target}:00</span></div>
+    <div class="ttot"><span>${t('work')}</span><span class="tabnum">${fmtDur(work)} / ${fmtHours(target)}</span></div>
     <div class="tline"><span class="dim">${t('breakRow')}</span><span class="tabnum dim">${fmtDur(pause)}</span></div>
     ${unlabeled?`<div class="compl warn">${t('unlabeledWarn',unlabeled)}</div>`:''}
     ${compl}`;
@@ -902,17 +1005,89 @@ function billSplitHtml(blocks){
       <span><i style="background:var(--dim)"></i>${t('internal')} <b class="tabnum">${fmtDur(sp.intern)}</b> <span class="dim">${100-pf}%</span></span>
     </div>`;
 }
-function renderDescList(){
-  const seen=new Set(); let h='';
-  state.blocks.forEach(b=>{ if(b.description && !seen.has(b.description)){ seen.add(b.description); h+=`<option value="${esc(b.description)}">`; }});
-  el('desc-list').innerHTML=h;
+/* --- description recall ---
+   A <textarea> can't carry a <datalist>, so the "descriptions I've typed before" affordance
+   is rebuilt here: newest first, prefix matches ahead of substring matches, keyboard-driven.
+   It stays out of the way — it only opens once something is typed. --- */
+let suggItems=[], suggI=-1, suggAccept=null, suggBoxEl=null;
+function descPool(){
+  const seen=new Set(), out=[];
+  for(let i=state.blocks.length-1;i>=0;i--){       // newest first: recent work repeats most
+    const d=(state.blocks[i].description||'').trim();
+    if(d&&!seen.has(d)){ seen.add(d); out.push(d); }
+  }
+  return out;
+}
+function growDesc(ta){ if(!ta) return; ta.style.height='auto'; ta.style.height=ta.scrollHeight+'px'; }
+function closeSugg(){ if(suggBoxEl){ suggBoxEl.hidden=true; suggBoxEl.innerHTML=''; } suggBoxEl=null; suggAccept=null; suggItems=[]; suggI=-1; }
+function openSugg(box,q,accept){
+  if(!box) return;
+  q=(q||'').trim().toLowerCase();
+  if(!q){ closeSugg(); return; }
+  const pool=descPool().filter(d=>d.toLowerCase()!==q);
+  const pre=pool.filter(d=>d.toLowerCase().startsWith(q));
+  suggItems=pre.concat(pool.filter(d=>!d.toLowerCase().startsWith(q)&&d.toLowerCase().includes(q))).slice(0,6);
+  if(!suggItems.length){ closeSugg(); return; }
+  suggI=-1; suggBoxEl=box; suggAccept=accept;
+  box.innerHTML=suggItems.map((d,i)=>`<div data-s="${i}">${esc(d)}</div>`).join('');
+  box.hidden=false;
+  // The rail scrolls, so a list opened near its bottom edge would fall out of sight —
+  // flip it above the field when there is more room there.
+  box.style.top=''; box.style.bottom=''; box.style.margin='';
+  const sc=box.closest('#rail')||document.body;
+  const br=box.getBoundingClientRect(), sr=sc.getBoundingClientRect();
+  if(br.bottom>sr.bottom && (br.top-sr.top)>(sr.bottom-br.top)){
+    box.style.top='auto'; box.style.bottom='100%'; box.style.margin='0 0 2px';
+  }
+  // mousedown, not click: the textarea's blur would tear the list down first
+  box.querySelectorAll('[data-s]').forEach(n=>n.onmousedown=e=>{ e.preventDefault(); suggPick(+n.dataset.s); });
+}
+function paintSugg(){
+  const box=suggBoxEl; if(!box) return;
+  box.querySelectorAll('[data-s]').forEach(n=>n.classList.toggle('on',+n.dataset.s===suggI));
+}
+function suggPick(i){
+  const v=suggItems[i]; if(v==null) return;
+  const ta=suggBoxEl&&suggBoxEl.parentNode.querySelector('textarea');
+  if(suggAccept) suggAccept(v);
+  closeSugg();
+  if(ta) ta.focus();
+}
+// Returns true when the keystroke belonged to the suggestion list, so the editor's own
+// Enter/Tab/Escape handling stays untouched whenever the list is closed.
+function suggKey(e){
+  if(!suggItems.length) return false;
+  if(e.key==='ArrowDown'){ e.preventDefault(); suggI=(suggI+1)%suggItems.length; paintSugg(); return true; }
+  if(e.key==='ArrowUp'){ e.preventDefault(); suggI=(suggI-1+suggItems.length)%suggItems.length; paintSugg(); return true; }
+  if((e.key==='Enter'||e.key==='Tab')&&suggI>=0){ e.preventDefault(); suggPick(suggI); return true; }
+  if(e.key==='Escape'){ e.preventDefault(); closeSugg(); return true; }
+  return false;
 }
 
 /* ============================ live loop actions ============================ */
-function startDay(){ if(runningBlock())return; const b={id:uid('b'),start:now(),end:null,positionId:null,description:''}; state.blocks.push(b); selectedId=b.id; save(); render(); }
-function switchTask(){ const r=runningBlock(); if(!r)return; r.end=now(); const b={id:uid('b'),start:r.end,end:null,positionId:null,description:''}; state.blocks.push(b); selectedId=b.id; save(); render(); }
-function breakNow(){ const r=runningBlock(); if(!r)return; r.end=now(); const b={id:uid('b'),start:r.end,end:null,positionId:PAUSE(),description:''}; state.blocks.push(b); selectedId=b.id; save(); render(); }
-function stopDay(){ const r=runningBlock(); if(!r)return; r.end=now(); save(); render(); }
+// A live boundary is an edit like any other, so it lands on the same grid the timeline snaps
+// to. Snapping relative to the timestamp's OWN midnight (not the selected day's) keeps it
+// correct across midnight and DST. `floorMs` is the earliest legal value — the start of the
+// block being closed, or the end of the previous one. If snapping would leave that block
+// shorter than one grid step, we keep the real clock time: a zero-length or inverted block
+// is a worse lie than an unsnapped one.
+function snapLiveMs(ms,floorMs){
+  if(!S().snapLive) return ms;
+  const mid=new Date(ms); mid.setHours(0,0,0,0);
+  const g=S().snapMin;
+  const snapped=mid.getTime()+Math.round((ms-mid.getTime())/60000/g)*g*60000;
+  if(floorMs!=null && snapped<floorMs+g*60000) return ms;
+  return snapped;
+}
+function lastEndBefore(ms){
+  let out=null;
+  state.blocks.forEach(b=>{ if(b.end!=null&&b.end<=ms&&(out==null||b.end>out)) out=b.end; });
+  return out;
+}
+function startDay(){ if(runningBlock())return; const n=now(); const s=snapLiveMs(n,lastEndBefore(n)); const b={id:uid('b'),start:s,end:null,positionId:null,description:''}; state.blocks.push(b); selectedId=b.id; save(); render(); }
+function switchTask(){ const r=runningBlock(); if(!r)return; r.end=snapLiveMs(now(),r.start); const b={id:uid('b'),start:r.end,end:null,positionId:null,description:''}; state.blocks.push(b); selectedId=b.id; save(); render(); }
+function breakNow(){ const r=runningBlock(); if(!r)return; r.end=snapLiveMs(now(),r.start); const b={id:uid('b'),start:r.end,end:null,positionId:PAUSE(),description:''}; state.blocks.push(b); selectedId=b.id; save(); render(); }
+function stopDay(){ const r=runningBlock(); if(!r)return; r.end=snapLiveMs(now(),r.start); save(); render(); }
 
 /* ============================ editing ============================ */
 function selectBlock(id){
@@ -1123,14 +1298,16 @@ document.addEventListener('keydown',e=>{
 
 /* ============================ positions manager ============================ */
 function openPositions(){
-  const used=new Set(state.blocks.map(b=>b.positionId));
-  const vis=p=>!p.archived||used.has(p.id);
-  const parents=state.positions.filter(p=>!p.parentId&&!p.reserved);
+  // Archived positions are hidden, not resurrected by past usage — but they stay one toggle
+  // away so an accidental delete is recoverable.
+  const vis=p=>showArchivedPos||posVisible(p);
+  const kidsOf=id=>state.positions.filter(p=>p.parentId===id);
+  const parents=state.positions.filter(p=>!p.parentId&&!p.reserved&&!p.archived);
   const hkOpts=p=>[1,2,3,4,5,6,7,8,9].map(n=>`<option value="${n}"${p.hotkey===n?' selected':''}>${n}</option>`).join('');
 
   const rowFor=p=>{
-    const container=!isBookable(p), bill=isBillable(p);
-    return `<div class="prow" data-p="${p.id}">
+    const container=!isBookable(p), bill=isBillable(p), inh=!!p.parentId&&!p.color;
+    return `<div class="prow${p.archived?' arch':''}" data-p="${p.id}">
       ${container
         ? `<span class="dim" style="text-align:center;font-size:11px">–</span>`
         : `<select data-f="hotkey" title="${t('hotkey')}">
@@ -1148,8 +1325,13 @@ function openPositions(){
         <option value="1"${p.billable===true?' selected':''}>${t('billYes')}</option>
         <option value="0"${p.billable===false?' selected':''}>${t('billNo')}</option>
       </select>`}
-      <input type="color" value="${p.color}" data-f="color" ${p.reserved?'disabled':''}>
+      <div class="colcell">
+        <input type="color" class="${inh?'inh':''}" value="${posColor(p)}" data-f="color"
+               title="${inh?t('colorInherited'):''}" ${p.reserved?'disabled':''}>
+        ${!p.reserved&&p.parentId&&p.color?`<button class="mini" data-act="uncolor" title="${t('colorReset')}">↺</button>`:''}
+      </div>
       ${p.reserved?`<span class="dim" style="font-size:10px">${t('locked')}</span>`
+        :p.archived?`<button class="mini" data-act="unarch" title="${t('unarchive')}">↩</button>`
                   :`<button class="mini" data-act="del" title="${t('archive')}">✕</button>`}
     </div>`;
   };
@@ -1157,7 +1339,7 @@ function openPositions(){
   let rows='';
   state.positions.filter(p=>!p.parentId&&vis(p)).forEach(p=>{
     rows+=rowFor(p);
-    childrenOf(p.id).filter(vis).forEach(c=>{ rows+=rowFor(c); });
+    kidsOf(p.id).filter(vis).forEach(c=>{ rows+=rowFor(c); });
   });
 
   openModal(`<h2>${t('positions')}</h2>
@@ -1183,9 +1365,13 @@ function openPositions(){
       <input type="color" id="np-color" value="#5e7ce0">
       <span></span>
     </div>
+    <div class="modal-actions" style="justify-content:flex-start">
+      <label class="chk"><input type="checkbox" id="p-sharch" ${showArchivedPos?'checked':''}> ${t('showArchived')}</label>
+    </div>
     <div class="modal-actions"><button class="btn outline" id="np-add">${t('add')}</button>
       <button class="btn outline" id="pe">${t('exportW')}</button><button class="btn outline" id="pi">${t('importW')}</button>
       <button class="btn primary" id="pc">${t('done')}</button></div>`, 'wide');
+  el('p-sharch').onchange=e=>{ showArchivedPos=e.target.checked; openPositions(); };
 
   el('modal').querySelectorAll('.prow').forEach(row=>{
     const p=posById(row.dataset.p);
@@ -1200,7 +1386,7 @@ function openPositions(){
         const v=e.target.value||null;
         if(v && childrenOf(p.id).length){ toast(t('tHasChildren')); openPositions(); return; }  // no 3rd level
         p.parentId=v;
-        if(v){ const par=posById(v); if(par){ p.color=mix(par.color,'#ffffff',0.18); par.hotkey=null; } }
+        if(v){ const par=posById(v); if(par){ p.color=null; par.hotkey=null; } }   // adopt the project's colour
         if(!isBookable(p)) p.hotkey=null;
         ensureHotkeys(); save(); openPositions(); render(); return;
       }
@@ -1211,7 +1397,20 @@ function openPositions(){
       p[f]=e.target.value; save(); render();
     });
     const del=row.querySelector('[data-act=del]');
-    if(del) del.onclick=()=>{ p.archived=true; p.hotkey=null; ensureHotkeys(); save(); openPositions(); render(); };
+    // Archiving a project takes its work packages with it — otherwise they survive as
+    // orphans and keep showing up in every picker.
+    if(del) del.onclick=()=>{
+      [p,...kidsOf(p.id)].forEach(x=>{ x.archived=true; x.hotkey=null; });
+      ensureHotkeys(); save(); openPositions(); render();
+    };
+    const un=row.querySelector('[data-act=unarch]');
+    if(un) un.onclick=()=>{
+      p.archived=false;
+      const par=projectOf(p); if(par&&par.archived) par.archived=false;   // else it stays invisible
+      ensureHotkeys(); save(); openPositions(); render();
+    };
+    const uc=row.querySelector('[data-act=uncolor]');
+    if(uc) uc.onclick=()=>{ p.color=null; save(); openPositions(); render(); };
   });
 
   el('np-add').onclick=()=>{
@@ -1219,7 +1418,7 @@ function openPositions(){
     if(!label){ toast(t('tLabelReq')); return; }
     const parentId=el('np-parent').value||null;
     const par=parentId?posById(parentId):null;
-    const color=par?mix(par.color,'#ffffff',0.18):el('np-color').value;
+    const color=par?null:el('np-color').value;   // a package inherits its project's colour
     state.positions.push({id:uid('p'),code:code||label.toUpperCase().slice(0,8),label,color,
       archived:false,parentId,billable:null});
     if(par) par.hotkey=null;            // a project that gains a package stops being bookable
@@ -1244,9 +1443,13 @@ function openData(){
       <div class="field"><label>${t('grid')}</label><select id="set-snap">
         ${[5,10,15,30].map(v=>`<option value="${v}"${v===sn?' selected':''}>${v} min</option>`).join('')}
       </select></div>
-      <div class="field"><label>${t('dailyTarget')}</label><input type="number" id="set-target" min="0" max="24" step="0.5" value="${tg}"></div>
-      <div class="field"><label>${t('weekTarget')}</label><input type="number" id="set-wtarget" min="0" max="80" step="0.5" value="${S().weekTargetHours||40}"></div>
+      <div class="field"><label>${t('dailyTarget')}</label>
+        <input type="text" id="set-target" inputmode="decimal" placeholder="8:12" title="${t('targetHint')}" value="${fmtHours(tg)}"></div>
+      <div class="field"><label>${t('weekTarget')}</label>
+        <input type="text" id="set-wtarget" inputmode="decimal" placeholder="41:00" title="${t('targetHint')}" value="${fmtHours(S().weekTargetHours||40)}"></div>
     </div>
+    <div class="field"><label class="chk"><input type="checkbox" id="set-snaplive" ${S().snapLive!==false?'checked':''}> ${t('snapLive')}</label>
+      <p class="hint" style="margin:4px 0 0">${t('snapLiveHint')}</p></div>
     <h3 class="sub-h">${t('theme')}</h3>
     <div class="th-row">
       <div class="th-f"><label>${t('themeBg')}</label><input type="color" id="th-bg" value="${th.bg}"></div>
@@ -1270,6 +1473,13 @@ function openData(){
         <option value="dec"${S().durFmt==='dec'?' selected':''}>${t('durDec')}</option>
       </select></div>
     </div>
+    <div class="row">
+      <div class="field"><label class="chk"><input type="checkbox" id="set-merge" ${S().mergeRows!==false?'checked':''}> ${t('mergeRows')}</label>
+        <p class="hint" style="margin:4px 0 0">${t('mergeRowsHint')}</p></div>
+      <div class="field"><label>${t('descSep')}</label>
+        <input type="text" id="set-sep" maxlength="8" value="${esc(descSep())}" placeholder=";">
+        <p class="hint" style="margin:4px 0 0">${t('descSepHint')}</p></div>
+    </div>
     <div class="field"><label>${t('columns')}</label>
       <div style="display:flex;flex-wrap:wrap;gap:10px;margin-top:4px">
         ${Object.keys(XCOLS).map(k=>`<label class="chk"><input type="checkbox" data-col="${k}" ${(S().exportCols||[]).includes(k)?'checked':''}> ${t(XCOLS[k].t)}</label>`).join('')}
@@ -1283,7 +1493,13 @@ function openData(){
     <div class="modal-actions"><button class="btn primary" id="bk-close">${t('done')}</button></div>`);
   el('set-lang').onchange=e=>{ S().lang=e.target.value; lang=e.target.value; save(); render(); openData(); };
   el('set-snap').onchange=e=>{ S().snapMin=+e.target.value; save(); renderTimeline(); };
-  el('set-target').onchange=e=>{ S().targetHours=+e.target.value||0; save(); renderTotals(); };
+  // Accepts 8, 8.2, 8,2 or 8:12 — reject silently by restoring the stored value.
+  el('set-target').onchange=e=>{ const v=parseHours(e.target.value);
+    if(v==null||v>24){ e.target.value=fmtHours(S().targetHours); return; }
+    S().targetHours=v; e.target.value=fmtHours(v); save(); renderTotals(); };
+  el('set-snaplive').onchange=e=>{ S().snapLive=e.target.checked; save(); };
+  el('set-merge').onchange=e=>{ S().mergeRows=e.target.checked; save(); };
+  el('set-sep').onchange=e=>{ S().descSep=e.target.value; save(); };
   const setTheme=patch=>{ S().theme=Object.assign({},THEME_DEFAULT,S().theme||{},patch); save(); applyTheme(); };
   ['bg','text','accent'].forEach(k=>{
     const inp=el('th-'+k); if(!inp) return;
@@ -1294,7 +1510,9 @@ function openData(){
     const p=THEME_PRESETS[+b.dataset.preset];
     S().theme={bg:p.bg,text:p.text,accent:p.accent}; save(); applyTheme(); openData();
   });
-  el('set-wtarget').onchange=e=>{ S().weekTargetHours=+e.target.value||0; save(); };
+  el('set-wtarget').onchange=e=>{ const v=parseHours(e.target.value);
+    if(v==null||v>80){ e.target.value=fmtHours(S().weekTargetHours||40); return; }
+    S().weekTargetHours=v; e.target.value=fmtHours(v); save(); };
   el('set-datefmt').onchange=e=>{ S().dateFmt=e.target.value; save(); };
   el('set-durfmt').onchange=e=>{ S().durFmt=e.target.value; save(); };
   el('modal').querySelectorAll('[data-col]').forEach(cb=>cb.onchange=()=>{
@@ -1382,7 +1600,7 @@ function paintQuickPick(){
   if(qp.i>=vis.length) qp.i=Math.max(0,vis.length-1);
   list.innerHTML=vis.map((p,i)=>`
     <div class="qp-item${i===qp.i?' cur':''}" data-pick="${p.id}">
-      <span class="sw" style="background:${p.color}"></span>
+      <span class="sw" style="background:${posColor(p)}"></span>
       <span class="qp-lab">${splitLabelHtml(p)}</span>
       <span class="qp-code">${esc(p.code||'')}</span>
       ${p.hotkey?`<kbd>${p.hotkey}</kbd>`:''}
@@ -1495,7 +1713,7 @@ function renderWeek(){
       const top=((b.start-d.ms)/60000-minM)*WPPM;
       const ht=Math.max(9,((bEnd(b)-b.start)/60000)*WPPM);
       const p=posById(b.positionId);
-      return `<div class="wk-blk${p?'':' un'}" style="top:${top}px;height:${ht}px;${p?`background:${p.color};`:''}"
+      return `<div class="wk-blk${p?'':' un'}" style="top:${top}px;height:${ht}px;${p?`background:${posColor(p)};`:''}"
         title="${esc((p?p.label:t('unlabeled'))+' · '+fmtHM(b.start)+'–'+fmtHM(bEnd(b)))}">${ht>18?esc(p?p.label:t('unlabeled')):''}</div>`;
     }).join('');
     return `<div class="wk-col${d.ms===todayMs?' today':''}${[0,6].includes(d.date.getDay())?' we':''}" data-day="${d.ms}" style="height:${H}px;background-image:${lines}">${inner}</div>`;
@@ -1516,7 +1734,7 @@ function renderWeekRail(ws,st){
   el('now-card').innerHTML=`<h3>${t('week')} ${isoWeekNo(ws)}</h3>
     <div class="dim tabnum" style="margin-bottom:8px">${t('wkRange',fmtD(ws),fmtD(we))}</div>
     <div class="elapsed tabnum">${fmtDur(st.work)}</div>
-    <div class="dim tabnum">${t('weekTotal')} / ${S().weekTargetHours||40}:00 ·
+    <div class="dim tabnum">${t('weekTotal')} / ${fmtHours(S().weekTargetHours||40)} ·
       ${over?t('over'):t('under')} ${fmtDur(Math.abs(diff))}</div>
     <div class="bar" style="margin-top:10px"><i style="width:${Math.min(100,target?st.work/target*100:0)}%;background:var(--accent-bright)"></i></div>
     <div class="tline" style="margin-top:10px"><span class="dim">${t('breakRow')}</span><span class="tabnum dim">${fmtDur(st.pause)}</span></div>
@@ -1542,7 +1760,7 @@ function renderWeekRail(ws,st){
          <span>${esc(p.label)}</span><span class="tabnum">${fmtDur(v)}</span></div>`).join('');
     return `<div class="stat">
       <div class="stat-top"><span>${esc(g.pos.label)}<span class="pct">${pctv}%</span></span><span class="tabnum">${fmtDur(g.total)}</span></div>
-      <div class="bar"><i style="width:${g.total/totalWork*100}%;background:${g.pos.color}"></i></div>
+      <div class="bar"><i style="width:${g.total/totalWork*100}%;background:${posColor(g.pos)}"></i></div>
       ${kids}
     </div>`;
   }).join(''):`<p class="dim" style="margin:0">${t('noDataWeek')}</p>`);
@@ -1567,10 +1785,11 @@ function renderWeekRail(ws,st){
 // reducing hand-entered cells: a day of many small blocks collapses to a few rows.
 function mergedRows(blocks){
   const out=[];
+  const merge=S().mergeRows!==false;   // off → one row per block, as tracked
   blocks.filter(b=>b.end!=null).forEach(b=>{
     const last=out[out.length-1];
     const d=(b.description||'').trim();
-    if(last && last.positionId===b.positionId && Math.abs(last.end-b.start)<1000){
+    if(merge && last && last.positionId===b.positionId && Math.abs(last.end-b.start)<1000){
       last.end=b.end;
       if(d && !last.descs.includes(d)) last.descs.push(d);
     } else {
@@ -1594,8 +1813,11 @@ const XCOLS={
   dur:  {t:'colDur',   v:r=>fmtDurExport(r.end-r.start)},
   proj: {t:'colProject',v:r=>{ const p=posById(r.positionId), pr=p&&projectOf(p); return pr?(pr.code||pr.label):''; }},
   pos:  {t:'colPos',   v:r=>{ const p=posById(r.positionId); return p?(p.code||p.label):''; }},
-  desc: {t:'colDesc',  v:r=>r.descs.join(' · ')}
+  desc: {t:'colDesc',  v:r=>r.descs.join(descSep())}
 };
+// Projectile instances differ in what they accept between merged descriptions, so the
+// separator is a setting. Stored verbatim; spaces around it are the user's choice.
+function descSep(){ const s=S().descSep; return s==null?';':s; }
 function activeCols(){ const c=S().exportCols||[]; return Object.keys(XCOLS).filter(k=>c.includes(k)); }
 
 let xstate=null;   // {cells:[{r,c,val}], i}
@@ -1616,7 +1838,9 @@ function openExport(){
   const cs=complianceOf(blocks);
   const warn=cs.viol?`<div class="compl warn" style="margin:0 0 10px">${t('warnBreak')}</div>`:'';
   openModal(`<h2>${t('projExport')}</h2>${warn}
-    <div class="xbar"><span>${t('rowsCells',rows.length,cells.length)}</span><span class="prog" id="x-prog"></span></div>
+    <div class="xbar"><span>${t('rowsCells',rows.length,cells.length)}</span>
+      <label class="chk"><input type="checkbox" id="x-merge" ${S().mergeRows!==false?'checked':''}> ${t('mergeRows')}</label>
+      <span class="prog" id="x-prog"></span></div>
     <div class="xwrap"><table class="xt">
       <thead><tr>${cols.map(c=>`<th>${t(XCOLS[c].t)}</th>`).join('')}</tr></thead>
       <tbody>${rows.map((r,ri)=>`<tr>${cols.map((c,ci)=>{
@@ -1632,6 +1856,8 @@ function openExport(){
     </div>
     <div class="modal-actions"><button class="btn primary" id="x-close">${t('close')}</button></div>`);
   el('modal').querySelectorAll('.xc').forEach(d=>d.onclick=()=>{ xstate.i=+d.dataset.x; copyCurrent(); });
+  // Flipping it here writes the setting — the decision is usually made looking at the table.
+  el('x-merge').onchange=e=>{ S().mergeRows=e.target.checked; save(); openExport(); };
   el('x-row').onclick=()=>{ const ri=Math.floor(xstate.i/cols.length);
     copyText(cols.map((c,ci)=>cells[ri*cols.length+ci].val).join('\t')).then(()=>toast(t('tRowCopied'))); };
   el('x-all').onclick=()=>{ copyText(rows.map(r=>cols.map(c=>XCOLS[c].v(r)).join('\t')).join('\n')).then(()=>toast(t('tAllCopied'))); };
