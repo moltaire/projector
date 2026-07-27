@@ -1,0 +1,1736 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Projector</title>
+<meta name="description" content="Local-first time tracking that prepares Projectile timesheets. No install, no accounts, data stays in your browser.">
+<meta name="theme-color" content="#1c1b22">
+<meta name="color-scheme" content="dark light">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Projector">
+<meta name="robots" content="noindex">
+<link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2032%2032%22%3E%3Crect%20width%3D%2232%22%20height%3D%2232%22%20rx%3D%227%22%20fill%3D%22%231c1b22%22%2F%3E%3Crect%20x%3D%228%22%20y%3D%226%22%20%20width%3D%2216%22%20height%3D%227%22%20rx%3D%222%22%20fill%3D%22%235e7ce0%22%2F%3E%3Crect%20x%3D%228%22%20y%3D%2215%22%20width%3D%2216%22%20height%3D%224%22%20rx%3D%221.5%22%20fill%3D%22%23d49a4a%22%2F%3E%3Crect%20x%3D%228%22%20y%3D%2221%22%20width%3D%2216%22%20height%3D%225%22%20rx%3D%222%22%20fill%3D%22%23a8b86a%22%2F%3E%3C%2Fsvg%3E">
+<link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2032%2032%22%3E%3Crect%20width%3D%2232%22%20height%3D%2232%22%20rx%3D%227%22%20fill%3D%22%231c1b22%22%2F%3E%3Crect%20x%3D%228%22%20y%3D%226%22%20%20width%3D%2216%22%20height%3D%227%22%20rx%3D%222%22%20fill%3D%22%235e7ce0%22%2F%3E%3Crect%20x%3D%228%22%20y%3D%2215%22%20width%3D%2216%22%20height%3D%224%22%20rx%3D%221.5%22%20fill%3D%22%23d49a4a%22%2F%3E%3Crect%20x%3D%228%22%20y%3D%2221%22%20width%3D%2216%22%20height%3D%225%22%20rx%3D%222%22%20fill%3D%22%23a8b86a%22%2F%3E%3C%2Fsvg%3E">
+<style>
+  :root{
+    --bg:#1c1b22; --card:#2b2a32; --card2:#27262e; --line:#3a3942;
+    --text:#e5e5e5; --dim:#7c7884;
+    --accent:#757c58; --accent-bright:#a8b86a; --accent-hover:#bccf7a; --on-accent:#1c1b22;
+    --focus:#CE3F32; --break:#F4BA40; --rest:#2A62B6;
+    --radius:12px; --radius-sm:8px; --t:.15s;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%}
+  body{
+    background:var(--bg); color:var(--text);
+    font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,sans-serif;
+    font-size:14px; display:flex; flex-direction:column; height:100vh; overflow:hidden;
+  }
+  .tabnum{font-variant-numeric:tabular-nums}
+  button{font-family:inherit; cursor:pointer; color:var(--text)}
+  /* ---- header ---- */
+  header{
+    display:flex; align-items:center; gap:18px; padding:12px 18px;
+    border-bottom:1px solid var(--line); flex:0 0 auto; flex-wrap:wrap; row-gap:8px;
+  }
+  .brand{font-weight:600; letter-spacing:-.2px; font-size:15px}
+  .datenav{display:flex; align-items:center; gap:6px}
+  .datenav .date{min-width:150px; text-align:center; font-weight:500}
+  .toolbar{margin-left:auto; display:flex; gap:8px; align-items:center; flex-wrap:wrap}
+  .tb-sep{width:1px; height:19px; background:var(--line); flex:0 0 auto}
+  .btn{
+    background:none; border:1px solid transparent; color:var(--dim);
+    padding:7px 11px; border-radius:var(--radius-sm); transition:color var(--t),border-color var(--t),background var(--t);
+    font-size:13px;
+  }
+  .btn:hover{color:var(--text)}
+  .btn.outline{border-color:var(--line)}
+  .btn.outline:hover{border-color:var(--accent)}
+  .btn.primary{background:var(--accent-bright); color:var(--on-accent); border-color:var(--accent-bright); font-weight:600}
+  .btn.primary:hover{background:var(--accent-hover); border-color:var(--accent-hover)}
+  .btn.on{color:var(--on-accent); background:var(--accent-bright); border-color:var(--accent-bright)}
+  .btn.soon{color:var(--dim); border:1px dashed var(--line); cursor:default}
+  .btn:disabled{opacity:.7}
+  .btn.icon{padding:7px 9px}
+  /* ---- main ---- */
+  /* minmax(0,…) stops wide content from blowing the grid out and scrolling the page */
+  main{flex:1 1 auto; display:grid; grid-template-columns:minmax(0,1fr) 340px; min-height:0}
+  #timeline-wrap{overflow:auto; position:relative; padding:0 8px 40px 0}
+  @media (max-width:1040px){ main{grid-template-columns:minmax(0,1fr) 280px} }
+  #timeline{position:relative; margin:14px 0 0 56px}
+  .hourline{position:absolute; left:-50px; right:0; border-top:1px solid var(--line)}
+  .hourlabel{position:absolute; left:-52px; transform:translateY(-7px); width:44px; text-align:right; color:var(--dim); font-size:11px}
+  .block{
+    position:absolute; left:0; right:14px; border-radius:7px; overflow:hidden;
+    padding:3px 8px; color:#fff; cursor:grab; border:1.5px solid transparent;
+    box-shadow:inset 3px 0 0 rgba(0,0,0,.25);
+  }
+  .block .bt{font-size:12px; font-weight:600; display:flex; gap:4px; min-width:0; align-items:baseline}
+  /* flex-shrink 9999 vs 1: the project prefix gives up all its width before the work
+     package loses a single character */
+  .lp{opacity:.72; font-weight:500; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; flex:0 9999 auto; min-width:0}
+  .ln{flex:0 1 auto; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; min-width:0}
+  .block .bm{font-size:10.5px; opacity:.85; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+  .block.sel{border-color:var(--text); box-shadow:inset 3px 0 0 rgba(0,0,0,.25),0 0 0 1px rgba(255,255,255,.25)}
+  .block.unlabeled{background:repeating-linear-gradient(45deg,var(--line),var(--line) 7px,var(--card2) 7px,var(--card2) 14px); color:var(--text)}
+  .block.running::after{content:"●"; position:absolute; top:3px; right:6px; color:#fff; font-size:9px; animation:pulse 1.6s infinite}
+  .rz{position:absolute; left:0; right:0; height:7px; cursor:ns-resize; z-index:2}
+  .rz-top{top:0} .rz-bot{bottom:0}
+  @keyframes pulse{50%{opacity:.3}}
+  .seam{position:absolute; left:0; right:14px; height:11px; transform:translateY(-5.5px); cursor:row-resize; z-index:3}
+  .seam .ln{position:absolute; top:5px; left:0; right:0; border-top:1px solid transparent}
+  .seam:hover .ln{border-top:1px dashed var(--accent-bright)}
+  .seam .mrg{position:absolute; right:0; top:0; transform:translateY(-3px); display:none;
+    background:var(--card); border:1px solid var(--line); color:var(--dim); border-radius:6px; font-size:11px; padding:1px 6px; cursor:pointer}
+  .seam:hover .mrg{display:block}
+  .seam .mrg:hover{color:var(--text); border-color:var(--accent)}
+  #nowline{position:absolute; left:-50px; right:14px; border-top:2px solid var(--focus); z-index:2; pointer-events:none}
+  #nowline::before{content:""; position:absolute; left:-4px; top:-4px; width:7px; height:7px; border-radius:50%; background:var(--focus)}
+  /* scrub rail: the hour-label strip is the marker's home and drag surface */
+  #gutter{position:absolute; left:-56px; width:56px; top:0; bottom:0; z-index:0; cursor:row-resize; border-right:1px solid var(--line)}
+  #gutter:hover{background:var(--accent-ghost)}
+  #gutter .gh{position:absolute; left:0; right:0; border-top:1px dashed var(--accent-bright); opacity:0; pointer-events:none}
+  #gutter:hover .gh{opacity:.55}
+  #playhead{position:absolute; left:-56px; right:14px; border-top:2px solid var(--accent-bright); z-index:5; pointer-events:none}
+  #playhead .ph-hit{position:absolute; left:0; right:0; top:-5px; height:11px; pointer-events:auto; cursor:row-resize}
+  #playhead .ph-handle{position:absolute; left:0; top:-7px; width:0; height:0; border-style:solid; border-width:7px 0 7px 11px; border-color:transparent transparent transparent var(--accent-bright); pointer-events:auto; cursor:row-resize}
+  #playhead .ph-time{position:absolute; left:13px; top:-8px; font-size:10px; font-weight:600; color:var(--on-accent); background:var(--accent-bright); padding:1px 4px; border-radius:3px; font-variant-numeric:tabular-nums}
+  #ghost{position:absolute; left:0; right:14px; background:var(--accent-ghost); border:1px solid var(--accent-bright); border-radius:7px; display:none; pointer-events:none; z-index:1}
+  /* ---- rail ---- */
+  #rail{border-left:1px solid var(--line); padding:14px; overflow-y:auto; display:flex; flex-direction:column; gap:14px}
+  .card{background:var(--card); border-radius:var(--radius); padding:14px}
+  .card h3{margin:0 0 10px; font-size:11px; letter-spacing:.09em; text-transform:uppercase; color:var(--dim); font-weight:600}
+  .field{display:block; margin-bottom:9px}
+  .field label{display:block; font-size:11px; color:var(--dim); margin-bottom:3px}
+  select,input[type=text],input[type=time],input[type=number]{
+    width:100%; background:var(--card2); border:1px solid var(--line); color:var(--text);
+    border-radius:var(--radius-sm); padding:8px; font-family:inherit; font-size:13px;
+  }
+  select:focus,input:focus{outline:none; border-color:var(--accent)}
+  .row{display:flex; gap:8px}
+  .row>*{flex:1}
+  .nowbtns{display:flex; gap:8px; margin-top:10px}
+  .nowbtns .btn{flex:1; text-align:center}
+  .elapsed{font-size:34px; font-weight:600; letter-spacing:-1.5px; margin:6px 0 2px}
+  .dim{color:var(--dim)}
+  .tline{display:flex; align-items:center; justify-content:space-between; padding:5px 0; border-bottom:1px solid var(--line)}
+  .tline:last-child{border-bottom:none}
+  .tline .sw{width:10px; height:10px; border-radius:3px; display:inline-block; margin-right:8px; vertical-align:-1px}
+  .ttot{display:flex; justify-content:space-between; margin-top:10px; padding-top:10px; border-top:1px solid var(--line); font-weight:600}
+  .compl{margin-top:10px; padding:8px 10px; border-radius:var(--radius-sm); font-size:12.5px}
+  .compl.ok{background:var(--accent-soft); color:var(--accent-bright)}
+  .compl.warn{background:rgba(244,186,64,.16); color:var(--break)}
+  /* ---- modal ---- */
+  #overlay{position:fixed; inset:0; background:rgba(0,0,0,.55); display:none; align-items:center; justify-content:center; z-index:50}
+  .modal{background:var(--card); border-radius:var(--radius); box-shadow:0 8px 32px rgba(0,0,0,.5); width:min(540px,92vw); max-height:86vh; overflow:auto; padding:20px}
+  .modal h2{margin:0 0 14px; font-size:16px}
+  .sub-h{font-size:11px; letter-spacing:.09em; text-transform:uppercase; color:var(--dim); margin:16px 0 8px}
+  .modal.wide{width:min(820px,95vw)}
+  .ptable{display:grid; grid-template-columns:52px 92px minmax(140px,1fr) 124px 108px 36px 26px; gap:7px; align-items:center}
+  .ptable.add{margin-top:0}
+  .ptable .ph{font-size:10px; letter-spacing:.08em; text-transform:uppercase; color:var(--dim); font-weight:600; padding-bottom:2px}
+  .prow{display:contents}
+  .ptable input[type=text],.ptable select{width:100%; padding:6px 7px; font-size:12px; min-width:0}
+  .ptable input[type=color]{width:100%; height:30px; padding:2px; background:var(--card2); border:1px solid var(--line); border-radius:var(--radius-sm); cursor:pointer}
+  .ptable input:disabled,.ptable select:disabled{opacity:.55}
+  .lab-wrap{display:flex; align-items:center; gap:4px; min-width:0}
+  .lab-wrap .kid{color:var(--dim); flex:0 0 auto; font-size:11px}
+  .ptable .mini{background:none; border:none; color:var(--dim); font-size:13px; padding:2px 4px; cursor:pointer}
+  .ptable .mini:hover{color:var(--text)}
+  .modal-actions{display:flex; justify-content:flex-end; gap:8px; margin-top:6px}
+  /* ---- week view ---- */
+  .seg{display:inline-flex; border:1px solid var(--line); border-radius:var(--radius-sm); overflow:hidden}
+  .seg button{background:none; border:none; color:var(--dim); padding:6px 12px; font-size:12.5px; font-family:inherit}
+  .seg button.on{background:var(--accent-bright); color:var(--on-accent); font-weight:600}
+  .seg button:not(.on):hover{color:var(--text)}
+  #weekview{padding:14px 14px 40px 0}
+  .wk-head,.wk-grid{display:grid; grid-template-columns:46px repeat(7,minmax(52px,1fr)); min-width:460px}
+  .wk-dh{padding:0 4px 8px; text-align:center; cursor:pointer; border-radius:6px}
+  .wk-dh:hover .wk-dn{color:var(--text)}
+  .wk-dh.today .wk-dn{color:var(--accent-bright)}
+  .wk-dn{font-size:11px; color:var(--dim); font-weight:600; letter-spacing:.04em}
+  .wk-dt{font-size:11px; color:var(--dim); font-variant-numeric:tabular-nums}
+  .wk-col{position:relative; border-left:1px solid var(--line); cursor:pointer}
+  .wk-col.we{background-color:var(--hover-soft)}
+  .wk-col.today{background-color:var(--accent-ghost); box-shadow:inset 2px 0 0 var(--accent-bright), inset -2px 0 0 var(--accent-bright)}
+  .wk-dh.today{background:var(--accent-ghost)}
+  .wk-dh.today .wk-dn{color:var(--accent-bright)}
+  .split{display:flex; gap:2px; height:7px; border-radius:4px; overflow:hidden; background:var(--card2); margin:8px 0 6px}
+  .split>i{display:block; height:100%}
+  .splitleg{display:flex; gap:12px; flex-wrap:wrap; font-size:11.5px}
+  .splitleg span{display:flex; align-items:center; gap:5px}
+  .splitleg i{width:9px; height:9px; border-radius:2px; display:inline-block}
+  .wk-dh.we .wk-dn,.wk-dh.we .wk-dt{opacity:.62}
+  .wk-col:hover{background:var(--hover-soft)}
+  .wk-gut{position:relative}
+  .wk-hl{position:absolute; right:4px; transform:translateY(-6px); font-size:10px; color:var(--dim); font-variant-numeric:tabular-nums}
+  .wk-blk{position:absolute; left:2px; right:2px; border-radius:4px; overflow:hidden; padding:1px 4px; color:#fff; font-size:9.5px; line-height:1.25; box-shadow:inset 2px 0 0 rgba(0,0,0,.25)}
+  .wk-blk.un{background:repeating-linear-gradient(45deg,var(--line),var(--line) 5px,var(--card2) 5px,var(--card2) 10px); color:var(--dim)}
+  /* ---- stat bars ---- */
+  .stat{margin-bottom:9px}
+  .stat-top{display:flex; justify-content:space-between; font-size:12.5px; margin-bottom:3px}
+  .stat-top .pct{color:var(--dim); font-size:11px; margin-left:6px}
+  .bar{height:6px; border-radius:3px; background:var(--card2); overflow:hidden}
+  .bar>i{display:block; height:100%; border-radius:3px}
+  .dayrow{display:grid; grid-template-columns:34px 1fr auto; gap:8px; align-items:center; padding:4px 0; border-bottom:1px solid var(--line); font-size:12.5px}
+  .dayrow:last-child{border-bottom:none}
+  .dayrow.zero{opacity:.45}
+  .dayrow .dbar{height:6px; border-radius:3px; background:var(--card2); overflow:hidden; display:flex}
+  .dayrow .dbar>i{display:block; height:100%}
+  .flag{font-size:10px; padding:1px 5px; border-radius:999px; margin-left:5px}
+  .flag.warn{background:rgba(244,186,64,.16); color:var(--break)}
+  /* ---- shortcuts overlay ---- */
+  .sc-grid{display:grid; grid-template-columns:1fr 1fr; gap:0 26px}
+  @media (max-width:620px){ .sc-grid{grid-template-columns:1fr} }
+  .sc-sec{margin-bottom:14px; break-inside:avoid}
+  .sc-sec h4{margin:0 0 6px; font-size:10px; letter-spacing:.09em; text-transform:uppercase; color:var(--dim); font-weight:600}
+  .sc-row{display:flex; align-items:center; gap:10px; padding:3px 0; font-size:12.5px}
+  .sc-row .lbl{flex:1; min-width:0}
+  kbd{
+    display:inline-block; background:var(--card2); border:1px solid var(--line); border-bottom-width:2px;
+    border-radius:4px; padding:1px 6px; font-family:inherit; font-size:11px; color:var(--text);
+    min-width:20px; text-align:center; font-variant-numeric:tabular-nums;
+  }
+  .sc-keys{display:flex; gap:4px; align-items:center; color:var(--dim); font-size:11px}
+  .hw-row{display:grid; grid-template-columns:112px 1fr; gap:12px; padding:4px 0; font-size:12.5px; align-items:baseline}
+  .hw-t{font-weight:600}
+  .hw-d{color:var(--dim); line-height:1.45}
+  @media (max-width:620px){ .hw-row{grid-template-columns:1fr; gap:2px} }
+  label.chk{display:flex; align-items:center; gap:6px; font-size:12.5px; color:var(--text); cursor:pointer; user-select:none; margin:0}
+  .chk input[type=checkbox]{accent-color:var(--accent); width:13px; height:13px; margin:0; cursor:pointer}
+  /* ---- quick pick + hotkey chips ---- */
+  .qp-list{max-height:46vh; overflow:auto; margin-top:10px}
+  .qp-item{display:flex; align-items:center; gap:9px; padding:7px 9px; border-radius:var(--radius-sm); cursor:pointer; border:1.5px solid transparent}
+  .qp-item:hover{background:var(--card2)}
+  .qp-item.cur{border-color:var(--accent-bright); background:var(--accent-ghost)}
+  .qp-item .sw{width:11px; height:11px; border-radius:3px; flex:0 0 auto}
+  .qp-lab{flex:1; min-width:0; display:flex; gap:4px; align-items:baseline; font-size:13px}
+  .qp-code{font-size:11px; color:var(--dim)}
+  .hk-wrap{display:flex; flex-wrap:wrap; gap:5px; margin:2px 0 10px}
+  .hk{display:flex; align-items:center; gap:5px; padding:3px 7px 3px 5px; border-radius:999px; border:1px solid var(--line); background:var(--card2); color:var(--text); cursor:pointer; font-size:11.5px; max-width:100%}
+  .hk:hover{border-color:var(--accent)}
+  .hk.on{border-color:var(--accent-bright); background:var(--accent-ghost)}
+  .hk .sw{width:9px; height:9px; border-radius:2px; flex:0 0 auto}
+  .hk .n{font-weight:600; font-variant-numeric:tabular-nums; color:var(--dim)}
+  .hk.on .n{color:var(--accent-bright)}
+  .hk .t{overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+  .prog-lbl{font-size:11px; color:var(--dim); margin-bottom:6px}
+  .wk-hint{margin:10px 0 0 46px}
+  /* ---- theme picker ---- */
+  .th-row{display:flex; gap:10px; flex-wrap:wrap; align-items:flex-end}
+  .th-f{flex:1; min-width:92px}
+  .th-f label{display:block; font-size:11px; color:var(--dim); margin-bottom:3px}
+  .th-f input[type=color]{width:100%; height:32px; padding:2px; background:var(--card2); border:1px solid var(--line); border-radius:var(--radius-sm); cursor:pointer}
+  .th-presets{display:flex; gap:7px; flex-wrap:wrap; margin-top:9px}
+  .th-p{display:flex; gap:0; border:1px solid var(--line); border-radius:999px; overflow:hidden; cursor:pointer; padding:0; background:none}
+  .th-p:hover{border-color:var(--accent-bright)}
+  .th-p i{display:block; width:17px; height:17px}
+  /* ---- export ---- */
+  .xwrap{overflow-x:auto; margin:12px 0}
+  table.xt{border-collapse:collapse; width:100%; font-size:12.5px}
+  table.xt th{text-align:left; font-size:10px; letter-spacing:.08em; text-transform:uppercase; color:var(--dim); font-weight:600; padding:4px 8px; border-bottom:1px solid var(--line)}
+  table.xt td{padding:0; border-bottom:1px solid var(--line)}
+  table.xt td .xc{padding:6px 8px; cursor:pointer; border:1.5px solid transparent; border-radius:5px; white-space:nowrap; transition:background var(--t)}
+  table.xt td .xc:hover{background:var(--card2)}
+  table.xt td .xc.cur{border-color:var(--accent-bright); background:var(--accent-ghost)}
+  table.xt td .xc.done{color:var(--dim)}
+  .xbar{display:flex; align-items:center; gap:10px; font-size:12px; color:var(--dim); margin-bottom:4px}
+  .xbar .prog{margin-left:auto; font-variant-numeric:tabular-nums}
+  #toast{position:fixed; bottom:18px; left:50%; transform:translateX(-50%); background:var(--card); border:1px solid var(--line); padding:9px 14px; border-radius:999px; font-size:13px; opacity:0; transition:opacity .2s; pointer-events:none; z-index:60}
+  #toast.show{opacity:1}
+  .hint{font-size:11px; color:var(--dim); margin-top:6px; line-height:1.4}
+  .m-only{display:none}
+  @media (max-width:820px){
+    /* one pane at a time: the timeline keeps its own scroll, the rail is a toggled panel */
+    main{grid-template-columns:minmax(0,1fr)}
+    #timeline-wrap,#rail{grid-column:1; grid-row:1; width:100%; min-width:0}
+    #timeline-wrap{padding:0 10px 32px 0}
+    #timeline{margin-left:44px}
+    #gutter{left:-44px; width:44px}
+    .hourlabel{left:-42px; width:36px}
+    .hourline{left:-40px}
+    #playhead{left:-44px}
+    #nowline{left:-40px}
+    #rail{border-left:none; overflow-y:auto}
+    body:not(.show-rail) #rail{display:none}
+    body.show-rail #timeline-wrap{display:none}
+    .m-only{display:inline-flex}
+    .toolbar{margin-left:0; width:100%}
+    .datenav{flex:1 1 auto}
+    /* week: fit 7 columns without scrolling the page sideways */
+    #weekview{padding:12px 10px 32px 0}
+    .wk-head,.wk-grid{grid-template-columns:34px repeat(7,minmax(0,1fr)); min-width:0}
+    .wk-hint{margin-left:34px}
+    .wk-blk{font-size:8px; padding:1px 2px; left:1px; right:1px}
+    .wk-dt{font-size:10px}
+  }
+</style>
+</head>
+<body>
+<header>
+  <div class="brand">Projector</div>
+  <div class="datenav">
+    <button class="btn icon" id="prev">‹</button>
+    <span class="date" id="date-label"></span>
+    <button class="btn icon" id="next">›</button>
+    <button class="btn" id="today-btn">today</button>
+  </div>
+  <div class="seg" id="viewseg">
+    <button data-v="day" id="v-day">Day</button><button data-v="week" id="v-week">Week</button>
+  </div>
+  <div class="toolbar">
+    <button class="btn outline" id="proj-btn">Übertragen</button>
+    <button class="btn outline" id="ics-btn">Kalender-Export</button>
+    <span class="tb-sep"></span>
+    <button class="btn outline" id="pos-btn">Positionen</button>
+    <button class="btn outline" id="data-btn">Einstellungen</button>
+    <button class="btn outline m-only" id="m-toggle"></button>
+    <button class="btn icon outline" id="help-btn">?</button>
+  </div>
+</header>
+<main>
+  <div id="timeline-wrap">
+    <div id="timeline"></div>
+    <div id="weekview" hidden></div>
+  </div>
+  <div id="rail">
+    <div class="card" id="now-card"></div>
+    <div class="card" id="editor-card" hidden></div>
+    <div class="card" id="totals-card"></div>
+  </div>
+</main>
+<div id="overlay"><div class="modal" id="modal"></div></div>
+<datalist id="desc-list"></datalist>
+<div id="toast"></div>
+<input type="file" id="file-in" accept="application/json,.json" hidden>
+
+<script>
+"use strict";
+/* ============================ state & storage ============================ */
+const KEY='projector-v1';
+const PPM=1.5;                 // pixels per minute on the timeline
+const DAY=86400000;
+let state, selectedDate, selectedId=null, playhead=null, viewMode='day';
+let curWinStart=0;             // window start in minutes-of-day (set during render)
+const drag={active:false};
+
+const el=id=>document.getElementById(id);
+const pad=n=>String(n).padStart(2,'0');
+const uid=p=>p+Date.now().toString(36)+Math.random().toString(36).slice(2,6);
+const TRASH='<svg viewBox="0 0 14 16" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-1px"><path d="M1.5 3.5h11M5 3.5V1.5h4v2M2.5 3.5l.8 10a1 1 0 0 0 1 .9h5.4a1 1 0 0 0 1-.9l.8-10M5.5 6.5v5M8.5 6.5v5"/></svg>';
+
+/* ============================ i18n ============================ */
+let lang='de';
+function loc(){ return lang==='de'?'de-DE':'en-GB'; }
+const I18N={
+  en:{
+    today:'today', positions:'Positions',
+    pastDay:'Past day', pastHint:'Live tracking is only for today. Draw on empty time to add a block, or edit existing blocks on the track.',
+    nowTracking:'Now — tracking', now:'Now', notTracking:'Not tracking.',
+    position:'Position', description:'Description', descPh:'what are you doing?',
+    since:x=>`since ${x}`, switchBtn:'Switch ↻', breakBtn:'Break ⏸', stop:'Stop ■', startDay:'Start day ▶',
+    selectedBlock:'Selected block', start:'Start', end:'End', nowWord:'now',
+    duration:d=>`Duration ${d}`, split:'Split ✂', del:'Delete',
+    editorHint:'<b>↵</b> description · <b>n</b> next open block · <b>?</b> all shortcuts',
+    totals:'Totals', noBlocks:'No blocks yet.', work:'Work', breakRow:'Break (Pause)',
+    unlabeled:'unlabeled', mergeBtn:'merge',
+    unlabeledWarn:n=>`${n} unlabeled block${n>1?'s':''} — assign a position before exporting.`,
+    breakNone:rem=>`No break due yet — ${rem} of work until the 30-min break is required.`,
+    breakOkBy:(min,mark)=>`Break OK — ${min} min taken before the ${mark} mark.`, breakOk:'Break OK.',
+    breakLate:(thr,have,need)=>`Break too late — worked past ${thr}h with only ${have} min of break. Projectile requires ${need} min taken <b>by</b> ${thr}h of work, not at the end.`,
+    addPosition:'Add position', codePh:'CODE', labelPh:'Label', add:'Add', exportW:'Export', importW:'Import', done:'Done', locked:'locked', archive:'Archive', language:'Language', grid:'Grid / snap', dailyTarget:'Daily target (h)',
+    dataNote:'Everything lives in this browser. Back up regularly — clearing browsing data will erase it.',
+    exportBackup:'Export backup (.json)', importBackup:'Import backup',
+    stillRunning:'Still running?', staleText:(when,hrs)=>`A block has been running since <b>${when}</b> (${hrs}h). The app was probably closed or asleep.`,
+    endItAt:'End it at', keepRunning:'Keep running', stopIt:'Stop it',
+    tMerged:l=>`Merged → kept “${l}”`, tTooSmall:'Too small to split here', tMoveMarker:'Move the marker over a block first',
+    tSelectFirst:'Select a block first', tNoAdjacent:'No adjacent block to merge', tPosImported:'Positions imported',
+    tBackupRestored:'Backup restored', tNotBackup:'Not a valid backup', tInvalidJson:'Invalid JSON',
+    tLabelReq:'Label required', tNothingExport:'Nothing to export for this day', tCalExported:'Calendar exported',
+    btnTransfer:'Transfer', btnCalendar:'Calendar export', btnSettings:'Settings',
+    projExport:'Transfer to Projectile',
+    help:'Help', howItWorks:'How tracking works',
+    hwStart:['Start day','Begins tracking. From now on every minute belongs to a block.'],
+    hwSwitch:['Switch','Ends the current block and opens a new one, with no gap between them.'],
+    hwBreak:['Break','Like Switch, but the new block uses the reserved position “Pause”. Breaks are transferred to Projectile too, and count toward the legal break rule.'],
+    hwStop:['Stop','Ends tracking. Time after a Stop is off-clock: it is never transferred — that is how time off differs from a break.'],
+    hwSessions:['Several sessions','You can Start and Stop more than once a day (e.g. a doctor’s appointment); the time in between stays off-clock.'],
+    startHint:'Starts the clock. Everything from here until you press Stop gets tracked.',
+    tipSwitch:'End this block, start a new one right after it',
+    tipBreak:'Start a break (position “Pause”) — booked, and counts for the break rule',
+    tipStop:'Stop the clock — time after this is not tracked',
+    colDate:'Date', colStart:'Start', colEnd:'End', colDur:'Duration', colPos:'Position', colDesc:'Description',
+    cellProgress:(i,n)=>`Cell ${i} / ${n}`,
+    exportHint:'Click a cell (or press Enter) to copy it and advance. Paste into Projectile, press Tab, repeat.',
+    copyRow:'Copy row', copyAll:'Copy all', close:'Close', reset:'Restart',
+    tCopied:v=>`Copied “${v}”`, tAllCopied:'All rows copied', tRowCopied:'Row copied', tExportDone:'Last cell copied — done.',
+    tCopyFail:'Copy failed — click the cell directly.', tEmptyCell:'Empty cell — skipped.',
+    tNoUnlabeled:'No unlabeled blocks left on this day.', tCleared:'Position cleared',
+    tNoHotkey:n=>`No position on ${n}`, qpFilter:'Type to filter…',
+    qpHint:'↑/↓ move · Enter pick · 1–9 hotkey · Esc cancel',
+    scLabeling:'Fast labeling', scAssign:'Assign position 1–9',
+    scClearPos:'Clear position', scEditDesc:'Edit description',
+    scNextUn:'Next block without a position', scNextBlock:'Next / previous block',
+    scQuickPick:'Open position quick-pick', scCommitNext:'Commit and jump to next unlabeled',
+    hotkey:'Key', unlabeledLeft:n=>`${n} left without a position`, allLabeled:'All blocks labeled',
+    factura:'Factura', internal:'Internal', billability:'Billing', parentPos:'Project',
+    billInherit:'inherit', billYes:'Factura', billNo:'Internal',
+    noParent:'— none —',
+    colProject:'Project',
+    mTimeline:'Timeline', mDetails:'Details',
+    tHasChildren:'This position has work packages — only two levels are supported.',
+    rowsCells:(r,c)=>`${r} row${r>1?'s':''} · ${c} cells`,
+    blockedUnlabeled:'Assign a position to every block before exporting.',
+    warnBreak:'Break rule not met — check before booking.',
+    exportSettings:'Export', dateFmt:'Date format', durFmt:'Duration format', columns:'Columns',
+    durHM:'HH:MM', durDec:'Decimal hours',
+    viewDay:'Day', viewWeek:'Week', week:'Week', weekTarget:'Weekly target (h)',
+    wkRange:(a,b)=>`${a} – ${b}`, byPosition:'By position', perDay:'Per day',
+    weekTotal:'Week total', over:'over', under:'under', noDataWeek:'Nothing tracked this week.',
+    dayNames:['Mon','Tue','Wed','Thu','Fri','Sat','Sun'], complWarnShort:'break!',
+    weekUnlabeled:n=>`${n} block${n>1?'s':''} without a position this week.`,
+    clickDayHint:'Click a day to open it.',
+    shortcuts:'Keyboard shortcuts', scGeneral:'General', scMarker:'Marker & cutting',
+    scBlock:'Selected block', scExport:'Export dialog', scHintOpen:'Press ? for shortcuts',
+    scToggleView:'Switch day / week view', scHelp:'Show this help', scEsc:'Close / deselect',
+    scPrevNext:'Previous / next day (week)', scToday:'Jump to today',
+    scMove:'Move marker', scSplit:'Split block at marker', scMerge:'Merge with neighbour',
+    scDelete:'Delete block', scCopyCell:'Copy cell and advance', scNavCell:'Previous / next cell',
+    theme:'Theme', themeBg:'Background', themeText:'Text', themeAccent:'Accent', themeReset:'Reset'
+  },
+  de:{
+    today:'heute', positions:'Positionen',
+    pastDay:'Vergangener Tag', pastHint:'Live-Erfassung nur für heute. Ziehe auf leere Zeit, um einen Block anzulegen, oder bearbeite bestehende Blöcke.',
+    nowTracking:'Jetzt — läuft', now:'Jetzt', notTracking:'Keine Erfassung.',
+    position:'Position', description:'Beschreibung', descPh:'Woran arbeitest du?',
+    since:x=>`seit ${x}`, switchBtn:'Wechseln ↻', breakBtn:'Pause ⏸', stop:'Stopp ■', startDay:'Tag starten ▶',
+    selectedBlock:'Ausgewählter Block', start:'Beginn', end:'Ende', nowWord:'jetzt',
+    duration:d=>`Dauer ${d}`, split:'Teilen ✂', del:'Löschen',
+    editorHint:'<b>↵</b> Beschreibung · <b>n</b> nächster offener Block · <b>?</b> alle Kürzel',
+    totals:'Summen', noBlocks:'Noch keine Blöcke.', work:'Arbeit', breakRow:'Pause',
+    unlabeled:'ohne Position', mergeBtn:'verbinden',
+    unlabeledWarn:n=>`${n} ${n>1?'Blöcke':'Block'} ohne Position — vor dem Export zuweisen.`,
+    breakNone:rem=>`Noch keine Pause fällig — noch ${rem} Arbeit bis zur 30-Min-Pause.`,
+    breakOkBy:(min,mark)=>`Pause OK — ${min} Min vor der ${mark}-Grenze genommen.`, breakOk:'Pause OK.',
+    breakLate:(thr,have,need)=>`Pause zu spät — über ${thr} h gearbeitet mit nur ${have} Min Pause. Projectile verlangt ${need} Min <b>bis</b> ${thr} h Arbeit, nicht am Ende.`,
+    addPosition:'Position hinzufügen', codePh:'KÜRZEL', labelPh:'Bezeichnung', add:'Hinzufügen', exportW:'Export', importW:'Import', done:'Fertig', locked:'gesperrt', archive:'Archivieren', language:'Sprache', grid:'Raster / Einrasten', dailyTarget:'Tagessoll (Std.)',
+    dataNote:'Alle Daten liegen in diesem Browser. Sichere regelmäßig — beim Löschen der Browserdaten gehen sie verloren.',
+    exportBackup:'Sicherung exportieren (.json)', importBackup:'Sicherung importieren',
+    stillRunning:'Läuft noch?', staleText:(when,hrs)=>`Ein Block läuft seit <b>${when}</b> (${hrs} h). Die App war wohl geschlossen oder im Ruhezustand.`,
+    endItAt:'Beenden um', keepRunning:'Weiterlaufen lassen', stopIt:'Beenden',
+    tMerged:l=>`Verbunden → „${l}“ behalten`, tTooSmall:'Zu klein zum Teilen', tMoveMarker:'Erst den Marker über einen Block bewegen',
+    tSelectFirst:'Erst einen Block auswählen', tNoAdjacent:'Kein angrenzender Block zum Verbinden', tPosImported:'Positionen importiert',
+    tBackupRestored:'Sicherung wiederhergestellt', tNotBackup:'Keine gültige Sicherung', tInvalidJson:'Ungültiges JSON',
+    tLabelReq:'Bezeichnung erforderlich', tNothingExport:'Für diesen Tag gibt es nichts zu exportieren', tCalExported:'Kalender exportiert',
+    btnTransfer:'Übertragen', btnCalendar:'Kalender-Export', btnSettings:'Einstellungen',
+    projExport:'Nach Projectile übertragen',
+    help:'Hilfe', howItWorks:'Wie die Zeiterfassung funktioniert',
+    hwStart:['Tag starten','Beginnt die Erfassung. Ab jetzt gehört jede Minute zu einem Block.'],
+    hwSwitch:['Wechseln','Beendet den aktuellen Block und öffnet lückenlos einen neuen.'],
+    hwBreak:['Pause','Wie Wechseln, aber der neue Block bekommt die reservierte Position „Pause“. Pausen werden mit nach Projectile übertragen und zählen für die gesetzliche Pausenregel.'],
+    hwStop:['Stopp','Beendet die Erfassung. Zeit nach dem Stopp ist nicht erfasst und wird nie übertragen — so unterscheidet sich Freizeit von einer Pause.'],
+    hwSessions:['Mehrere Abschnitte','Du kannst pro Tag mehrmals starten und stoppen (z. B. Arzttermin); die Zeit dazwischen bleibt unerfasst.'],
+    startHint:'Startet die Uhr. Alles von hier bis zum Stopp wird erfasst.',
+    tipSwitch:'Diesen Block beenden, direkt danach einen neuen starten',
+    tipBreak:'Pause beginnen (Position „Pause“) — wird gebucht und zählt für die Pausenregel',
+    tipStop:'Uhr stoppen — Zeit danach wird nicht erfasst',
+    colDate:'Datum', colStart:'Beginn', colEnd:'Ende', colDur:'Dauer', colPos:'Position', colDesc:'Beschreibung',
+    cellProgress:(i,n)=>`Zelle ${i} / ${n}`,
+    exportHint:'Zelle anklicken (oder Enter) kopiert sie und springt weiter. In Projectile einfügen, Tab drücken, wiederholen.',
+    copyRow:'Zeile kopieren', copyAll:'Alles kopieren', close:'Schließen', reset:'Neu starten',
+    tCopied:v=>`„${v}“ kopiert`, tAllCopied:'Alle Zeilen kopiert', tRowCopied:'Zeile kopiert', tExportDone:'Letzte Zelle kopiert — fertig.',
+    tCopyFail:'Kopieren fehlgeschlagen — Zelle direkt anklicken.', tEmptyCell:'Leere Zelle — übersprungen.',
+    tNoUnlabeled:'Keine Blöcke ohne Position an diesem Tag.', tCleared:'Position entfernt',
+    tNoHotkey:n=>`Keine Position auf ${n}`, qpFilter:'Tippen zum Filtern…',
+    qpHint:'↑/↓ bewegen · Enter wählen · 1–9 Kürzel · Esc abbrechen',
+    scLabeling:'Schnelles Zuordnen', scAssign:'Position 1–9 zuweisen',
+    scClearPos:'Position entfernen', scEditDesc:'Beschreibung bearbeiten',
+    scNextUn:'Nächster Block ohne Position', scNextBlock:'Nächster / vorheriger Block',
+    scQuickPick:'Positions-Schnellwahl öffnen', scCommitNext:'Übernehmen und zum nächsten offenen Block',
+    hotkey:'Taste', unlabeledLeft:n=>`noch ${n} ohne Position`, allLabeled:'Alle Blöcke zugeordnet',
+    factura:'Factura', internal:'Intern', billability:'Abrechnung', parentPos:'Projekt',
+    billInherit:'erben', billYes:'Factura', billNo:'Intern',
+    noParent:'— keins —',
+    colProject:'Projekt',
+    mTimeline:'Zeitstrahl', mDetails:'Details',
+    tHasChildren:'Diese Position hat Arbeitspakete — es sind nur zwei Ebenen möglich.',
+    rowsCells:(r,c)=>`${r} ${r>1?'Zeilen':'Zeile'} · ${c} Zellen`,
+    blockedUnlabeled:'Vor dem Export jedem Block eine Position zuweisen.',
+    warnBreak:'Pausenregel nicht erfüllt — vor dem Buchen prüfen.',
+    exportSettings:'Export', dateFmt:'Datumsformat', durFmt:'Dauerformat', columns:'Spalten',
+    durHM:'HH:MM', durDec:'Dezimalstunden',
+    viewDay:'Tag', viewWeek:'Woche', week:'KW', weekTarget:'Wochensoll (Std.)',
+    wkRange:(a,b)=>`${a} – ${b}`, byPosition:'Nach Position', perDay:'Pro Tag',
+    weekTotal:'Wochensumme', over:'über', under:'unter', noDataWeek:'Diese Woche nichts erfasst.',
+    dayNames:['Mo','Di','Mi','Do','Fr','Sa','So'], complWarnShort:'Pause!',
+    weekUnlabeled:n=>`${n} ${n>1?'Blöcke':'Block'} ohne Position diese Woche.`,
+    clickDayHint:'Tag anklicken zum Öffnen.',
+    shortcuts:'Tastaturkürzel', scGeneral:'Allgemein', scMarker:'Marker & Schneiden',
+    scBlock:'Ausgewählter Block', scExport:'Export-Dialog', scHintOpen:'? für Tastaturkürzel',
+    scToggleView:'Tages-/Wochenansicht wechseln', scHelp:'Diese Hilfe anzeigen', scEsc:'Schließen / Auswahl aufheben',
+    scPrevNext:'Vorheriger / nächster Tag (Woche)', scToday:'Zu heute springen',
+    scMove:'Marker bewegen', scSplit:'Block am Marker teilen', scMerge:'Mit Nachbarn verbinden',
+    scDelete:'Block löschen', scCopyCell:'Zelle kopieren und weiter', scNavCell:'Vorherige / nächste Zelle',
+    theme:'Farbschema', themeBg:'Hintergrund', themeText:'Text', themeAccent:'Akzent', themeReset:'Zurücksetzen'
+  }
+};
+function t(k,...a){ const v=(I18N[lang]&&I18N[lang][k]!=null)?I18N[lang][k]:I18N.en[k]; return typeof v==='function'?v(...a):v; }
+
+/* ============================ theme ============================ */
+function toRgb(h){ h=String(h).replace('#',''); if(h.length===3) h=h.split('').map(c=>c+c).join('');
+  return [parseInt(h.slice(0,2),16),parseInt(h.slice(2,4),16),parseInt(h.slice(4,6),16)]; }
+function toHex(a){ return '#'+a.map(v=>Math.max(0,Math.min(255,Math.round(v))).toString(16).padStart(2,'0')).join(''); }
+function mix(a,b,w){ const A=toRgb(a),B=toRgb(b); return toHex(A.map((v,i)=>v+(B[i]-v)*w)); }
+function rgba(h,a){ const [r,g,b]=toRgb(h); return `rgba(${r},${g},${b},${a})`; }
+function lum(h){ const [r,g,b]=toRgb(h).map(v=>{ v/=255; return v<=0.03928?v/12.92:Math.pow((v+0.055)/1.055,2.4); });
+  return 0.2126*r+0.7152*g+0.0722*b; }
+function contrast(a,b){ const l1=lum(a),l2=lum(b),hi=Math.max(l1,l2),lo=Math.min(l1,l2); return (hi+0.05)/(lo+0.05); }
+
+const THEME_DEFAULT={bg:'#1c1b22',text:'#e5e5e5',accent:'#757c58'};
+const THEME_PRESETS=[
+  {n:'Olive', bg:'#1c1b22', text:'#e5e5e5', accent:'#757c58'},
+  {n:'Slate', bg:'#161a20', text:'#e3e8ee', accent:'#4a6fa5'},
+  {n:'Plum',  bg:'#1e1a22', text:'#e9e3ea', accent:'#8a5f86'},
+  {n:'Ember', bg:'#1f1b19', text:'#ece5df', accent:'#a2603c'},
+  {n:'Paper', bg:'#f2f0e9', text:'#23221e', accent:'#636f45'}
+];
+// Everything is derived from three inputs by mixing toward the *opposite* end of the
+// bg/text axis, so a light background produces a light theme automatically and no
+// combination can render text illegible against its own surface.
+function applyTheme(){
+  const th=Object.assign({},THEME_DEFAULT,(state&&S().theme)||{});
+  const {bg,text,accent}=th, r=document.documentElement.style;
+  r.setProperty('--bg',bg);
+  r.setProperty('--text',text);
+  r.setProperty('--card',   mix(bg,text,0.07));
+  r.setProperty('--card2',  mix(bg,text,0.045));
+  r.setProperty('--line',   mix(bg,text,0.16));
+  // Perceptual luminance is non-linear: the same mix weight yields much weaker contrast on a
+  // light background. Weight asymmetrically so --dim clears WCAG AA (4.5) in both directions
+  // without flattening the muted hierarchy the dark theme relies on.
+  r.setProperty('--dim',    mix(text,bg,lum(bg)>0.5?0.30:0.40));
+  r.setProperty('--accent', accent);
+  const bright=mix(accent,text,0.30);
+  r.setProperty('--accent-bright',bright);
+  r.setProperty('--accent-hover', mix(accent,text,0.46));
+  r.setProperty('--on-accent', contrast(bright,'#111111')>=contrast(bright,'#ffffff')?'#111111':'#ffffff');
+  r.setProperty('--accent-soft',  rgba(accent,0.22));
+  r.setProperty('--accent-ghost', rgba(bright,0.16));
+  r.setProperty('--hover-soft',   rgba(text,0.035));
+}
+
+function defaults(){
+  return {
+    version:1,
+    settings:{dayStartHour:7,dayEndHour:20,snapMin:15,targetHours:8,staleHours:10,lang:'de',
+      exportCols:['start','end','pos','desc'],   // date/dur off by default — Projectile derives them
+      dateFmt:'dd.mm.yyyy', durFmt:'hm', weekTargetHours:40},
+    positions:[
+      // Two levels: top-level entries are projects (containers); their children are the
+      // bookable work packages. `billable` is inherited when null.
+      {id:'pause', code:'PAUSE', label:'Pause',         color:'#d49a4a', archived:false, reserved:true, parentId:null, billable:false, hotkey:9},
+      {id:'pint',  code:'INT',   label:'Intern',        color:'#6b7a8f', archived:false, parentId:null,   billable:false},
+      {id:'padm',  code:'ADMIN', label:'Admin & E-Mail',color:'#6b7a8f',  archived:false, parentId:'pint', billable:null, hotkey:1},
+      {id:'palpha',code:'PRJ-A', label:'Project Alpha', color:'#5e7ce0', archived:false, parentId:null,   billable:true},
+      {id:'pa_dev',code:'PRJ-A-DEV',  label:'Development', color:'#5e7ce0', archived:false, parentId:'palpha', billable:null, hotkey:2},
+      {id:'pa_mtg',code:'PRJ-A-MEET', label:'Meetings',    color:'#7b93e8',archived:false, parentId:'palpha', billable:null, hotkey:3},
+      {id:'pbeta', code:'PRJ-B', label:'Project Beta',  color:'#4fa3a1', archived:false, parentId:null,   billable:true},
+      {id:'pb_int',code:'PRJ-B-INT',  label:'Integration', color:'#4fa3a1',archived:false, parentId:'pbeta',  billable:null, hotkey:4}
+    ],
+    blocks:[]
+  };
+}
+const LEGACY_KEY='projectile-buddy-v1';   // pre-rename store; migrate once, never drop data
+function load(){
+  try{
+    let raw=localStorage.getItem(KEY);
+    if(raw==null){
+      const old=localStorage.getItem(LEGACY_KEY);
+      if(old!=null){ localStorage.setItem(KEY,old); raw=old; }   // keep the legacy copy as a safety net
+    }
+    state=JSON.parse(raw)||defaults();
+  }
+  catch(e){ state=defaults(); }
+  if(!state.positions.some(p=>p.id==='pause')) state.positions.unshift(defaults().positions[0]);
+  state.settings=Object.assign({},defaults().settings,state.settings||{});
+  lang=S().lang||'de';
+  if(ensureHotkeys()) save();
+}
+function save(){ localStorage.setItem(KEY,JSON.stringify(state)); }
+
+/* ============================ time helpers ============================ */
+const S=()=>state.settings;
+function todayMid(){ const d=new Date(); d.setHours(0,0,0,0); return d.getTime(); }
+function dayStartMs(){ return selectedDate.getTime(); }
+function isToday(){ return dayStartMs()===todayMid(); }
+function now(){ return Date.now(); }
+function bEnd(b){ return b.end==null?now():b.end; }
+function minOfDay(ms){ return (ms-dayStartMs())/60000; }
+function nowMin(){ return (now()-dayStartMs())/60000; }
+function snapMin(m){ const s=S().snapMin; return Math.round(m/s)*s; }
+function snapMs(ms){ return dayStartMs()+snapMin((ms-dayStartMs())/60000)*60000; }
+function fmtHM(ms){ const d=new Date(ms); return pad(d.getHours())+':'+pad(d.getMinutes()); }
+function fmtDur(ms){ const m=Math.max(0,Math.round(ms/60000)); return Math.floor(m/60)+':'+pad(m%60); }
+function parseHMok(s){ const m=/^(\d{1,2}):(\d{2})$/.exec((s||'').trim()); if(!m)return null; const h=+m[1],mi=+m[2]; if(h>23||mi>59)return null; const d=new Date(dayStartMs()); d.setHours(h,mi,0,0); return d.getTime(); }
+
+// DST-safe date arithmetic — never add DAY to a timestamp to move by days.
+function addDays(d,n){ const x=new Date(d); x.setDate(x.getDate()+n); x.setHours(0,0,0,0); return x; }
+function startOfWeek(d){ const x=new Date(d); x.setHours(0,0,0,0); return addDays(x,-((x.getDay()+6)%7)); }  // ISO: Monday
+function isoWeekNo(d){
+  const t=new Date(d); t.setHours(0,0,0,0);
+  t.setDate(t.getDate()+3-((t.getDay()+6)%7));            // Thursday of this week
+  const w1=new Date(t.getFullYear(),0,4);
+  return 1+Math.round(((t-w1)/DAY-3+((w1.getDay()+6)%7))/7);
+}
+function blocksOfDay(dayMs){
+  return state.blocks.filter(b=>b.start>=dayMs&&b.start<dayMs+DAY).sort((a,b)=>a.start-b.start);
+}
+function dayBlocks(){ return blocksOfDay(dayStartMs()); }
+function runningBlock(){ return state.blocks.find(b=>b.end==null); }
+function posById(id){ return state.positions.find(p=>p.id===id); }
+function PAUSE(){ return 'pause'; }
+
+/* --- two orthogonal axes on Position ---
+   1) hierarchy: parentId (2 levels — project → work package). A position with children is a
+      container and is NOT bookable; every leaf is.
+   2) billability: billable true/false, inherited from the parent when null. Kept separate
+      from the tree because a client project can contain a non-billable package. Unset at the
+      root resolves to *internal* — under-claiming billable time is the safe direction. --- */
+function childrenOf(id){ return state.positions.filter(p=>p.parentId===id&&!p.archived); }
+function isBookable(p){ return !!p && childrenOf(p.id).length===0; }
+function projectOf(p){ return p&&p.parentId ? posById(p.parentId) : null; }
+function rootOf(p){ return projectOf(p)||p; }
+function pathLabel(p){ const par=projectOf(p); return par ? `${par.label} › ${p.label}` : (p?p.label:''); }
+// Real project/package names are long. Render them as two spans so the *project* prefix
+// absorbs the truncation and the work package — the informative half — stays readable.
+function splitLabelHtml(p){
+  if(!p) return '';
+  const par=projectOf(p);
+  return par ? `<span class="lp">${esc(par.label)} ›</span><span class="ln">${esc(p.label)}</span>`
+             : `<span class="ln">${esc(p.label)}</span>`;
+}
+// Compact form for chips: the code is already short by design; fall back to a clipped label.
+function chipLabel(p){
+  if(!p) return '';
+  if(p.code && p.code.length<=14) return p.code;
+  const l=p.label||'';
+  return l.length>14 ? l.slice(0,13)+'…' : l;
+}
+function isBillable(p){
+  if(!p||p.reserved) return false;               // Pause is neither factura nor internal
+  if(p.billable!=null) return !!p.billable;
+  const par=projectOf(p);
+  return par ? isBillable(par) : false;
+}
+function isPause(p){ return !!p&&p.id===PAUSE(); }
+// Buckets a day/week of blocks into factura / internal / pause.
+function splitBillable(blocks){
+  let fact=0, intern=0, pause=0;
+  blocks.forEach(b=>{
+    const p=posById(b.positionId); if(!p) return;
+    const d=bEnd(b)-b.start;
+    if(isPause(p)) pause+=d; else if(isBillable(p)) fact+=d; else intern+=d;
+  });
+  return {fact,intern,pause};
+}
+
+/* --- hotkeys: a stable property of the position, never derived from sort order, so
+   muscle memory can't silently start booking to the wrong project. --- */
+function posByHotkey(n){ return state.positions.find(p=>p.hotkey===n&&!p.archived&&isBookable(p)); }
+function freeHotkey(){ for(let i=1;i<=9;i++) if(!posByHotkey(i)) return i; return null; }
+function ensureHotkeys(){
+  let changed=false;
+  // Real projects claim the low digits first; the reserved "Pause" takes what's left, so an
+  // upgrading store doesn't hand slot 1 to a break.
+  state.positions.filter(p=>!p.archived&&!p.hotkey&&isBookable(p))
+    .sort((a,b)=> (a.reserved?1:0)-(b.reserved?1:0))
+    .forEach(p=>{ const n=freeHotkey(); if(n){ p.hotkey=n; changed=true; } });
+  return changed;
+}
+
+/* ============================ rendering ============================ */
+function render(){
+  renderHeader(); renderDescList();
+  const wk=viewMode==='week';
+  el('timeline').hidden=wk; el('weekview').hidden=!wk;
+  if(wk){ renderWeek(); }
+  else { renderTimeline(); renderNow(); renderEditor(); renderTotals(); }
+}
+
+function renderHeader(){
+  const d=selectedDate;
+  document.documentElement.lang = lang==='de'?'de':'en-GB';
+  if(viewMode==='week'){
+    const ws=startOfWeek(d), we=addDays(ws,6);
+    const f=x=>`${pad(x.getDate())}.${pad(x.getMonth()+1)}.`;
+    el('date-label').textContent=`${t('week')} ${isoWeekNo(ws)} · ${f(ws)}–${f(we)}`;
+  } else {
+    el('date-label').textContent=d.toLocaleDateString(loc(),{weekday:'short',day:'2-digit',month:'short'});
+  }
+  el('v-day').textContent=t('viewDay'); el('v-week').textContent=t('viewWeek');
+  el('v-day').classList.toggle('on',viewMode==='day');
+  el('v-week').classList.toggle('on',viewMode==='week');
+  el('today-btn').textContent=t('today');
+  el('pos-btn').textContent=t('positions');
+  el('data-btn').textContent=t('btnSettings');
+  el('ics-btn').textContent=t('btnCalendar');
+  el('proj-btn').textContent=t('btnTransfer');
+  el('help-btn').title=t('scHintOpen');
+  el('m-toggle').textContent = document.body.classList.contains('show-rail')?t('mTimeline'):t('mDetails');
+}
+
+function usageCounts(){
+  const m={}; state.blocks.forEach(b=>{ if(b.positionId) m[b.positionId]=(m[b.positionId]||0)+1; }); return m;
+}
+// Only leaves are bookable — containers never appear in a picker.
+function pickerPositions(){
+  const used=new Set(state.blocks.map(b=>b.positionId));
+  const cnt=usageCounts();
+  return state.positions
+    .filter(p=>(!p.archived||used.has(p.id)) && isBookable(p))
+    .sort((a,b)=> (a.hotkey||99)-(b.hotkey||99) || ((cnt[b.id]||0)-(cnt[a.id]||0)) || pathLabel(a).localeCompare(pathLabel(b)));
+}
+// Grouped by project so the native select still reads as a tree.
+function posOptions(sel){
+  let h='<option value=""'+(sel?'':' selected')+'>— '+t('unlabeled')+' —</option>';
+  const items=pickerPositions(), seen=new Set();
+  const opt=p=>`<option value="${p.id}"${p.id===sel?' selected':''}>${esc(p.label)}${p.reserved?' ⏸':''}</option>`;
+  items.filter(p=>!p.parentId).forEach(p=>{ h+=opt(p); seen.add(p.id); });
+  const groups={};
+  items.filter(p=>p.parentId).forEach(p=>{ (groups[p.parentId]=groups[p.parentId]||[]).push(p); });
+  Object.keys(groups).forEach(gid=>{
+    const par=posById(gid);
+    h+=`<optgroup label="${esc(par?par.label:'—')}">`+groups[gid].map(opt).join('')+`</optgroup>`;
+  });
+  return h;
+}
+
+function renderTimeline(){
+  const tl=el('timeline'); const blocks=dayBlocks();
+  let minM=S().dayStartHour*60, maxM=S().dayEndHour*60;
+  blocks.forEach(b=>{ minM=Math.min(minM,minOfDay(b.start)); maxM=Math.max(maxM,minOfDay(bEnd(b))); });
+  if(isToday()) maxM=Math.max(maxM,nowMin());
+  minM=Math.max(0,Math.floor(minM/60)*60); maxM=Math.min(24*60,Math.ceil(maxM/60)*60);
+  if(maxM<=minM) maxM=minM+60;
+  curWinStart=minM;
+  const total=maxM-minM;
+  tl.style.height=(total*PPM)+'px';
+  let h='<div id="gutter"><div class="gh"></div></div>';
+  for(let hr=Math.ceil(minM/60); hr<=Math.floor(maxM/60); hr++){
+    const y=(hr*60-minM)*PPM;
+    h+=`<div class="hourline" style="top:${y}px"></div><div class="hourlabel tabnum" style="top:${y}px">${pad(hr)}:00</div>`;
+  }
+  blocks.forEach((b,i)=>{
+    const top=(minOfDay(b.start)-minM)*PPM, ht=Math.max(13,(minOfDay(bEnd(b))-minOfDay(b.start))*PPM);
+    const p=posById(b.positionId);
+    const cls='block'+(b.positionId?'':' unlabeled')+(b.id===selectedId?' sel':'')+(b.end==null?' running':'');
+    const style=`top:${top}px;height:${ht}px;${p?`background:${p.color};`:''}`;
+    const prevAbut=i>0 && Math.abs(blocks[i-1].end-b.start)<1000;
+    const nextAbut=i<blocks.length-1 && Math.abs(b.end-blocks[i+1].start)<1000;
+    const rzTop=(!prevAbut && ht>=24)?'<div class="rz rz-top"></div>':'';
+    const rzBot=(!nextAbut && b.end!=null && ht>=24)?'<div class="rz rz-bot"></div>':'';
+    h+=`<div class="${cls}" data-id="${b.id}" style="${style}">${rzTop}
+          <div class="bt">${p?splitLabelHtml(p):esc(t('unlabeled'))}</div>
+          <div class="bm tabnum">${fmtHM(b.start)}–${b.end==null?t('nowWord'):fmtHM(b.end)} · ${fmtDur(bEnd(b)-b.start)}${b.description?' · '+esc(b.description):''}</div>${rzBot}</div>`;
+  });
+  for(let i=0;i<blocks.length-1;i++){
+    const a=blocks[i], c=blocks[i+1];
+    if(Math.abs(a.end-c.start)<1000){ // abutting seam
+      const y=(minOfDay(a.end)-minM)*PPM;
+      h+=`<div class="seam" data-seam="${i}" style="top:${y}px"><div class="ln"></div><button class="mrg" data-merge="${i}">${t('mergeBtn')}</button></div>`;
+    }
+  }
+  if(playhead==null || playhead<dayStartMs() || playhead>dayStartMs()+DAY) playhead = isToday()? now() : dayStartMs()+12*3600000;
+  const phM=minOfDay(playhead);
+  if(phM>=minM && phM<=maxM){
+    h+=`<div id="playhead" style="top:${(phM-minM)*PPM}px"><div class="ph-hit"></div><div class="ph-handle"></div><div class="ph-time">${fmtHM(playhead)}</div></div>`;
+  }
+  if(isToday() && nowMin()>=minM && nowMin()<=maxM){
+    h+=`<div id="nowline" style="top:${(nowMin()-minM)*PPM}px"></div>`;
+  }
+  h+=`<div id="ghost"></div>`;
+  tl.innerHTML=h;
+}
+function esc(s){ return String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+
+function renderNow(){
+  const c=el('now-card'); const run=runningBlock();
+  if(!isToday()){
+    c.innerHTML=`<h3>${t('pastDay')}</h3><p class="dim" style="margin:0">${t('pastHint')}</p>`;
+    return;
+  }
+  if(run){
+    c.innerHTML=`<h3>${t('nowTracking')}</h3>
+      <div class="field"><label>${t('position')}</label><select id="now-pos">${posOptions(run.positionId)}</select></div>
+      <div class="field"><label>${t('description')}</label><input type="text" id="now-desc" list="desc-list" value="${esc(run.description||'')}" placeholder="${t('descPh')}"></div>
+      <div class="elapsed tabnum" id="now-elapsed">${fmtDur(now()-run.start)}</div>
+      <div class="dim tabnum">${t('since',fmtHM(run.start))}</div>
+      <div class="nowbtns">
+        <button class="btn outline" id="btn-switch" title="${t('tipSwitch')}">${t('switchBtn')}</button>
+        <button class="btn outline" id="btn-break" title="${t('tipBreak')}">${t('breakBtn')}</button>
+        <button class="btn outline" id="btn-stop" title="${t('tipStop')}">${t('stop')}</button>
+      </div>
+      <div class="hint" style="margin-top:8px"><a href="#" id="now-help" style="color:var(--accent-bright)">${t('help')}</a></div>`;
+    el('now-pos').onchange=e=>{ run.positionId=e.target.value||null; save(); renderTimeline(); renderTotals(); };
+    el('now-desc').oninput=e=>{ run.description=e.target.value; save(); renderTimeline(); };
+    el('now-desc').onkeydown=e=>{ if(e.key==='Enter'){ e.preventDefault(); e.target.blur(); } };
+    el('btn-switch').onclick=()=>switchTask();
+    el('btn-break').onclick=()=>breakNow();
+    el('btn-stop').onclick=()=>stopDay();
+    el('now-help').onclick=e=>{ e.preventDefault(); openShortcuts(); };
+  } else {
+    c.innerHTML=`<h3>${t('now')}</h3><p class="dim" style="margin:0 0 12px">${t('notTracking')}</p>
+      <button class="btn primary" id="btn-start" style="width:100%" title="${t('startHint')}">${t('startDay')}</button>
+      <div class="hint" style="margin-top:8px">${t('startHint')} <a href="#" id="now-help" style="color:var(--accent-bright)">${t('help')}</a></div>`;
+    el('btn-start').onclick=()=>startDay();
+    el('now-help').onclick=e=>{ e.preventDefault(); openShortcuts(); };
+  }
+}
+
+function renderEditor(){
+  const c=el('editor-card');
+  const b=state.blocks.find(x=>x.id===selectedId);
+  if(!b || dayBlocks().indexOf(b)<0){ c.hidden=true; return; }
+  c.hidden=false;
+  const running=b.end==null;
+  const un=unlabeledBlocks().length;
+  const chips=pickerPositions().filter(p=>p.hotkey).sort((a,b2)=>a.hotkey-b2.hotkey).map(p=>
+    `<button class="hk${p.id===b.positionId?' on':''}" data-hk="${p.id}" title="${esc(pathLabel(p))}">
+       <span class="n">${p.hotkey}</span><span class="sw" style="background:${p.color}"></span><span class="t">${esc(chipLabel(p))}</span>
+     </button>`).join('');
+  c.innerHTML=`<h3>${t('selectedBlock')}</h3>
+    <div class="prog-lbl">${un?t('unlabeledLeft',un):t('allLabeled')}</div>
+    <div class="hk-wrap">${chips}</div>
+    <div class="field"><label>${t('position')}</label><select id="ed-pos">${posOptions(b.positionId)}</select></div>
+    <div class="field"><label>${t('description')}</label><input type="text" id="ed-desc" list="desc-list" value="${esc(b.description||'')}"></div>
+    <div class="row">
+      <div class="field"><label>${t('start')}</label><input type="text" id="ed-start" inputmode="numeric" placeholder="HH:MM" value="${fmtHM(b.start)}"></div>
+      <div class="field"><label>${t('end')}</label>${running?`<input type="text" value="${t('nowWord')}" disabled>`:`<input type="text" id="ed-end" inputmode="numeric" placeholder="HH:MM" value="${fmtHM(b.end)}">`}</div>
+    </div>
+    <div class="dim tabnum" style="margin-bottom:10px">${t('duration',fmtDur(bEnd(b)-b.start))}</div>
+    <div class="nowbtns">
+      <button class="btn outline" id="ed-split">${t('split')}</button>
+      <button class="btn outline" id="ed-del">${t('del')} ${TRASH}</button>
+    </div>
+    <div class="hint">${t('editorHint')}</div>`;
+  el('ed-pos').onchange=e=>{ b.positionId=e.target.value||null; save(); renderTimeline(); renderTotals(); };
+  el('ed-desc').oninput=e=>{ b.description=e.target.value; save(); renderTimeline(); };
+  c.querySelectorAll('[data-hk]').forEach(n=>n.onclick=()=>{
+    b.positionId=n.dataset.hk; save(); render();
+  });
+  el('ed-desc').onkeydown=e=>{
+    if(e.key==='Enter'){
+      e.preventDefault(); e.target.blur();
+      if(e.metaKey||e.altKey||e.ctrlKey) gotoNextUnlabeled();     // commit + next open block
+    } else if(e.key==='Escape'){ e.preventDefault(); e.target.blur(); }
+    else if(e.key==='Tab'){ e.preventDefault(); e.target.blur(); gotoBlock(e.shiftKey?-1:1); }
+  };
+  el('ed-start').onchange=e=>{ const v=parseHMok(e.target.value); if(v==null){ renderEditor(); return; } setStart(b,v); };
+  if(!running) el('ed-end').onchange=e=>{ const v=parseHMok(e.target.value); if(v==null){ renderEditor(); return; } setEnd(b,v); };
+  el('ed-split').onclick=()=>cutBlockAt(b.id,(b.start+bEnd(b))/2);
+  el('ed-del').onclick=()=>deleteBlock(b.id);
+}
+
+function complianceOf(blocks){
+  // walk chronologically: a legal break (Pause ≥15 min) must be COMPLETE before work exceeds
+  // 6h (30 min) / 9h (45 min). A break booked at the end does not retroactively count.
+  let work=0, brk=0, viol=null;
+  for(const b of blocks){
+    const dur=(bEnd(b)-b.start)/60000;
+    if(b.positionId===PAUSE()){
+      if(dur>=15) brk+=dur;                       // only ≥15-min chunks count as legal breaks
+    } else {
+      if(!viol){
+        if(work<360 && work+dur>360 && brk<30) viol={at:360,need:30,have:brk};
+        else if(work<540 && work+dur>540 && brk<45) viol={at:540,need:45,have:brk};
+      }
+      work+=dur;
+    }
+  }
+  return {work, brk, required:(work>540?45:work>360?30:0), viol};
+}
+function renderTotals(){
+  const c=el('totals-card'); const blocks=dayBlocks();
+  const per={}; let work=0,pause=0;
+  blocks.forEach(b=>{
+    const dur=bEnd(b)-b.start;
+    const key=b.positionId||'__un';
+    per[key]=(per[key]||0)+dur;
+    if(b.positionId===PAUSE()) pause+=dur; else if(b.positionId) work+=dur; else work+=0;
+  });
+  const unlabeled=blocks.filter(b=>!b.positionId).length;
+  let rows=Object.entries(per).sort((a,b)=>b[1]-a[1]).map(([k,v])=>{
+    const p=posById(k); const sw=p?p.color:'var(--line)'; const lab=p?p.label:t('unlabeled');
+    return `<div class="tline"><span><span class="sw" style="background:${sw}"></span>${esc(lab)}</span><span class="tabnum">${fmtDur(v)}</span></div>`;
+  }).join('');
+  // compliance — break must be TAKEN BY the 6h/9h mark, not summed at day's end
+  const cs=complianceOf(blocks);
+  const hm=m=>Math.floor(m/60)+'h'+pad(Math.round(m%60));
+  let compl;
+  if(cs.viol){
+    compl=`<div class="compl warn">${t('breakLate',cs.viol.at/60,Math.round(cs.viol.have),cs.viol.need)}</div>`;
+  } else if(cs.work<360){
+    compl=`<div class="compl ok">${t('breakNone',hm(360-cs.work))}</div>`;
+  } else if(cs.required>0 && cs.brk>=cs.required){
+    compl=`<div class="compl ok">${t('breakOkBy',Math.round(cs.brk),cs.required>=45?'9h':'6h')}</div>`;
+  } else {
+    compl=`<div class="compl ok">${t('breakOk')}</div>`;
+  }
+
+  const target=S().targetHours;
+  c.innerHTML=`<h3>${t('totals')}</h3>${rows||`<p class="dim" style="margin:0">${t('noBlocks')}</p>`}
+    ${billSplitHtml(blocks)}
+    <div class="ttot"><span>${t('work')}</span><span class="tabnum">${fmtDur(work)} / ${target}:00</span></div>
+    <div class="tline"><span class="dim">${t('breakRow')}</span><span class="tabnum dim">${fmtDur(pause)}</span></div>
+    ${unlabeled?`<div class="compl warn">${t('unlabeledWarn',unlabeled)}</div>`:''}
+    ${compl}`;
+}
+
+// Factura vs Internal — the orthogonal axis, shown as one glanceable bar.
+function billSplitHtml(blocks){
+  const sp=splitBillable(blocks), work=sp.fact+sp.intern;
+  if(!work) return '';
+  const pf=Math.round(sp.fact/work*100);
+  return `<div class="split">
+      <i style="width:${sp.fact/work*100}%;background:var(--accent-bright)"></i>
+      <i style="width:${sp.intern/work*100}%;background:var(--dim)"></i>
+    </div>
+    <div class="splitleg">
+      <span><i style="background:var(--accent-bright)"></i>${t('factura')} <b class="tabnum">${fmtDur(sp.fact)}</b> <span class="dim">${pf}%</span></span>
+      <span><i style="background:var(--dim)"></i>${t('internal')} <b class="tabnum">${fmtDur(sp.intern)}</b> <span class="dim">${100-pf}%</span></span>
+    </div>`;
+}
+function renderDescList(){
+  const seen=new Set(); let h='';
+  state.blocks.forEach(b=>{ if(b.description && !seen.has(b.description)){ seen.add(b.description); h+=`<option value="${esc(b.description)}">`; }});
+  el('desc-list').innerHTML=h;
+}
+
+/* ============================ live loop actions ============================ */
+function startDay(){ if(runningBlock())return; const b={id:uid('b'),start:now(),end:null,positionId:null,description:''}; state.blocks.push(b); selectedId=b.id; save(); render(); }
+function switchTask(){ const r=runningBlock(); if(!r)return; r.end=now(); const b={id:uid('b'),start:r.end,end:null,positionId:null,description:''}; state.blocks.push(b); selectedId=b.id; save(); render(); }
+function breakNow(){ const r=runningBlock(); if(!r)return; r.end=now(); const b={id:uid('b'),start:r.end,end:null,positionId:PAUSE(),description:''}; state.blocks.push(b); selectedId=b.id; save(); render(); }
+function stopDay(){ const r=runningBlock(); if(!r)return; r.end=now(); save(); render(); }
+
+/* ============================ editing ============================ */
+function selectBlock(id){
+  selectedId=id;
+  if(isNarrow()) document.body.classList.add('show-rail');   // the editor lives in the rail
+  render();
+}
+function setStart(b,ms){
+  ms=snapMs(ms);
+  if(ms>=bEnd(b)-S().snapMin*60000) return;
+  const prev=dayBlocks().find(x=>Math.abs(x.end-b.start)<1000);
+  if(prev){ if(ms<=prev.start+S().snapMin*60000) return; prev.end=ms; }
+  b.start=ms; save(); render();
+}
+function setEnd(b,ms){
+  ms=snapMs(ms);
+  if(ms<=b.start+S().snapMin*60000) return;
+  const next=dayBlocks().find(x=>Math.abs(x.start-b.end)<1000);
+  if(next){ if(ms>=bEnd(next)-S().snapMin*60000) return; next.start=ms; }
+  b.end=ms; save(); render();
+}
+function cutBlockAt(id,ms){
+  const b=state.blocks.find(x=>x.id===id); if(!b)return;
+  ms=snapMs(ms); const min=S().snapMin*60000;
+  if(ms<=b.start+min || ms>=bEnd(b)-min){ toast(t('tTooSmall')); return; }
+  const oldEnd=b.end; const nb={id:uid('b'),start:ms,end:oldEnd,positionId:b.positionId,description:b.description};
+  b.end=ms; state.blocks.push(nb); selectedId=nb.id; save(); render();
+}
+function mergeSeam(i){
+  const bl=dayBlocks(); const a=bl[i], c=bl[i+1]; if(!a||!c)return;
+  const aLong=(bEnd(a)-a.start)>=(bEnd(c)-c.start); const keep=aLong?a:c;
+  a.positionId=keep.positionId; a.description=keep.description; a.end=c.end;
+  state.blocks=state.blocks.filter(x=>x.id!==c.id); selectedId=a.id; save(); render();
+  toast(t('tMerged', posById(keep.positionId)?.label||t('unlabeled')));
+}
+function deleteBlock(id){
+  const bl=dayBlocks(); const b=bl.find(x=>x.id===id); if(!b)return; const idx=bl.indexOf(b);
+  const prev=bl[idx-1], next=bl[idx+1];
+  if(prev&&Math.abs(prev.end-b.start)<1000) prev.end=b.end;            // absorb into previous
+  else if(next&&Math.abs(next.start-b.end)<1000) next.start=b.start;   // else into next
+  state.blocks=state.blocks.filter(x=>x.id!==id); selectedId=null; save(); render();
+}
+
+/* ============================ timeline interactions ============================ */
+function yToMs(clientY){
+  const r=el('timeline').getBoundingClientRect();
+  const min=curWinStart + (clientY-r.top)/PPM;
+  return dayStartMs()+min*60000;
+}
+el('timeline').addEventListener('mousedown',e=>{
+  // marker: grab its line anywhere, its handle, or anywhere on the gutter rail
+  if(e.target.closest('#gutter')||e.target.closest('.ph-hit')||e.target.closest('.ph-handle')){ startPlayheadDrag(e); return; }
+  const r=el('timeline').getBoundingClientRect();
+  if(e.clientX < r.left) return;                 // left ruler → playhead (handled on wrap)
+  const mrg=e.target.closest('[data-merge]'); if(mrg){ e.preventDefault(); mergeSeam(+mrg.dataset.merge); return; }
+  const seam=e.target.closest('[data-seam]'); if(seam){ startSeamDrag(+seam.dataset.seam,e); return; }
+  const blk=e.target.closest('[data-id]');
+  if(blk){
+    if(e.target.closest('.rz-top')){ startEdgeDrag(blk.dataset.id,'start',e); return; }
+    if(e.target.closest('.rz-bot')){ startEdgeDrag(blk.dataset.id,'end',e); return; }
+    startBlockPointer(blk.dataset.id,e); return;
+  }
+  startDraw(e);
+});
+el('timeline-wrap').addEventListener('mousedown',e=>{
+  const r=el('timeline').getBoundingClientRect();
+  if(e.clientX < r.left) startPlayheadDrag(e);
+});
+el('timeline').addEventListener('mousemove',e=>{                 // gutter hover preview
+  const g=el('gutter'); if(!g) return;
+  const gh=g.querySelector('.gh'); if(!gh) return;
+  if(e.target.closest('#gutter')){
+    const r=el('timeline').getBoundingClientRect();
+    gh.style.top=((snapMs(yToMs(e.clientY))-dayStartMs())/60000-curWinStart)*PPM+'px';
+  }
+});
+function startPlayheadDrag(e){
+  e.preventDefault(); drag.active=true;
+  const set=ev=>{ let ms=snapMs(yToMs(ev.clientY)); ms=Math.max(dayStartMs(),Math.min(dayStartMs()+DAY,ms)); playhead=ms; renderTimeline(); };
+  set(e);
+  const up=()=>{ drag.active=false; document.removeEventListener('mousemove',set); document.removeEventListener('mouseup',up); };
+  document.addEventListener('mousemove',set); document.addEventListener('mouseup',up);
+}
+function startBlockPointer(id,e){
+  e.preventDefault();
+  const b=state.blocks.find(x=>x.id===id); if(!b)return;
+  if(b.end==null){ selectBlock(id); return; }       // running block: select only
+  const startY=e.clientY, grab=yToMs(e.clientY)-b.start, dur=b.end-b.start;
+  const bl=dayBlocks(), idx=bl.indexOf(b);
+  const lower=idx>0?bl[idx-1].end:dayStartMs();
+  const upper=idx<bl.length-1?bl[idx+1].start:dayStartMs()+DAY;
+  let moved=false;
+  const move=ev=>{
+    if(!moved && Math.abs(ev.clientY-startY)<3) return;
+    moved=true; drag.active=true;
+    let ns=snapMs(yToMs(ev.clientY)-grab);
+    ns=Math.max(lower,Math.min(upper-dur,ns));
+    b.start=ns; b.end=ns+dur; renderTimeline();
+  };
+  const up=()=>{ drag.active=false; document.removeEventListener('mousemove',move); document.removeEventListener('mouseup',up); if(moved){ save(); render(); } else selectBlock(id); };
+  document.addEventListener('mousemove',move); document.addEventListener('mouseup',up);
+}
+function startEdgeDrag(id,which,e){
+  e.preventDefault(); drag.active=true;
+  const b=state.blocks.find(x=>x.id===id); if(!b)return;
+  const bl=dayBlocks(), idx=bl.indexOf(b), min=S().snapMin*60000;
+  const lower=idx>0?bl[idx-1].end:dayStartMs();
+  const upper=idx<bl.length-1?bl[idx+1].start:dayStartMs()+DAY;
+  const move=ev=>{
+    let ms=snapMs(yToMs(ev.clientY));
+    if(which==='start') b.start=Math.max(lower,Math.min(bEnd(b)-min,ms));
+    else b.end=Math.max(b.start+min,Math.min(upper,ms));
+    renderTimeline(); renderTotals();
+  };
+  const up=()=>{ drag.active=false; document.removeEventListener('mousemove',move); document.removeEventListener('mouseup',up); save(); render(); };
+  document.addEventListener('mousemove',move); document.addEventListener('mouseup',up);
+}
+function splitAtPlayhead(){
+  const b=dayBlocks().find(x=>x.start<playhead && bEnd(x)>playhead);
+  if(!b){ toast(t('tMoveMarker')); return; }
+  cutBlockAt(b.id, playhead);
+}
+function mergeSelected(){
+  const bl=dayBlocks(), b=bl.find(x=>x.id===selectedId);
+  if(!b){ toast(t('tSelectFirst')); return; }
+  const i=bl.indexOf(b);
+  if(i>0 && Math.abs(bl[i-1].end-b.start)<1000) mergeSeam(i-1);
+  else if(i<bl.length-1 && Math.abs(b.end-bl[i+1].start)<1000) mergeSeam(i);
+  else toast(t('tNoAdjacent'));
+}
+function nudgePlayhead(dir){
+  playhead=(playhead||dayStartMs())+dir*S().snapMin*60000;
+  playhead=Math.max(dayStartMs(),Math.min(dayStartMs()+DAY,playhead));
+  renderTimeline();
+}
+function startSeamDrag(i,e){
+  e.preventDefault(); const bl=dayBlocks(); const a=bl[i], c=bl[i+1]; if(!a||!c)return;
+  drag.active=true; const min=S().snapMin*60000;
+  const move=ev=>{ let ms=snapMs(yToMs(ev.clientY)); ms=Math.max(a.start+min,Math.min(bEnd(c)-min,ms)); a.end=ms; c.start=ms; renderTimeline(); renderTotals(); };
+  const up=()=>{ drag.active=false; document.removeEventListener('mousemove',move); document.removeEventListener('mouseup',up); save(); render(); };
+  document.addEventListener('mousemove',move); document.addEventListener('mouseup',up);
+}
+function startDraw(e){
+  e.preventDefault(); const t0=snapMs(yToMs(e.clientY)); drag.active=true;
+  // free region around t0 (off-clock)
+  const bl=dayBlocks();
+  let lo=dayStartMs(), hi=dayStartMs()+DAY;
+  bl.forEach(b=>{ if(bEnd(b)<=t0) lo=Math.max(lo,bEnd(b)); if(b.start>=t0) hi=Math.min(hi,b.start); });
+  if(bl.some(b=>t0>b.start&&t0<bEnd(b))){ drag.active=false; return; }
+  const g=el('ghost'); g.style.display='block';
+  const move=ev=>{ let t1=snapMs(yToMs(ev.clientY)); t1=Math.max(lo,Math.min(hi,t1));
+    const s=Math.min(t0,t1), en=Math.max(t0,t1);
+    g.style.top=((minOfDay(s)-curWinStart)*PPM)+'px'; g.style.height=((en-s)/60000*PPM)+'px'; };
+  const up=ev=>{ drag.active=false; g.style.display='none'; document.removeEventListener('mousemove',move); document.removeEventListener('mouseup',up);
+    let t1=snapMs(yToMs(ev.clientY)); t1=Math.max(lo,Math.min(hi,t1));
+    const s=Math.min(t0,t1), en=Math.max(t0,t1);
+    if(en-s>=S().snapMin*60000){ const b={id:uid('b'),start:s,end:en,positionId:null,description:''}; state.blocks.push(b); selectedId=b.id; save(); render(); }
+  };
+  document.addEventListener('mousemove',move); document.addEventListener('mouseup',up);
+}
+
+/* ============================ navigation & toolbar ============================ */
+el('prev').onclick=()=>{ selectedDate=addDays(selectedDate,viewMode==='week'?-7:-1); selectedId=null; render(); };
+el('next').onclick=()=>{ selectedDate=addDays(selectedDate,viewMode==='week'?7:1); selectedId=null; render(); };
+el('viewseg').onclick=e=>{ const b=e.target.closest('[data-v]'); if(!b)return; viewMode=b.dataset.v; selectedId=null; render(); };
+el('today-btn').onclick=()=>{ selectedDate=new Date(todayMid()); selectedId=null; render(); };
+el('pos-btn').onclick=openPositions;
+el('data-btn').onclick=openData;
+el('ics-btn').onclick=exportICS;
+el('proj-btn').onclick=openExport;
+el('help-btn').onclick=openShortcuts;
+el('m-toggle').onclick=()=>{ document.body.classList.toggle('show-rail'); renderHeader(); };
+const isNarrow=()=>window.matchMedia('(max-width:820px)').matches;
+
+document.addEventListener('keydown',e=>{
+  if(/^(INPUT|SELECT|TEXTAREA)$/.test(e.target.tagName)) return;
+  if(el('overlay').style.display==='flex'){
+    if(e.key==='Escape'){ closeModal(); return; }
+    if(xstate){                                   // guided cell queue
+      const n=xstate.cells.length;
+      if(e.key==='Enter'||e.key===' '){ e.preventDefault(); copyCurrent(); }
+      else if(e.key==='ArrowDown'||e.key==='ArrowRight'){ e.preventDefault(); xstate.i=Math.min(n-1,xstate.i+1); paintExport(); }
+      else if(e.key==='ArrowUp'||e.key==='ArrowLeft'){ e.preventDefault(); xstate.i=Math.max(0,xstate.i-1); paintExport(); }
+    }
+    return;
+  }
+  const k=e.key.toLowerCase();
+  if(e.key==='?'){ e.preventDefault(); openShortcuts(); return; }
+  if(k==='w'){ viewMode=viewMode==='week'?'day':'week'; selectedId=null; render(); return; }
+  if(k==='t'){ selectedDate=new Date(todayMid()); selectedId=null; render(); return; }
+  if(e.key==='ArrowLeft'){ e.preventDefault(); el('prev').click(); return; }
+  if(e.key==='ArrowRight'){ e.preventDefault(); el('next').click(); return; }
+  if(viewMode!=='day') return;                    // editing keys are day-view only
+  // --- fast labeling ---
+  if(/^[0-9]$/.test(e.key)){ e.preventDefault(); assignHotkey(+e.key); return; }
+  if(e.key==='Enter'){ e.preventDefault(); focusDesc(); return; }
+  if(e.key==='Tab'){ e.preventDefault(); gotoBlock(e.shiftKey?-1:1); return; }
+  if(k==='n'){ e.preventDefault(); gotoNextUnlabeled(); return; }
+  if(k==='s'){ splitAtPlayhead(); }
+  else if(k==='m'){ mergeSelected(); }
+  else if(k==='p'){ e.preventDefault(); openQuickPick(); }
+  else if(k==='l'){ e.preventDefault(); focusDesc(); }
+  else if(e.key==='Delete'||e.key==='Backspace'){ if(selectedId){ e.preventDefault(); deleteBlock(selectedId); } }
+  else if(e.key==='ArrowUp'){ e.preventDefault(); nudgePlayhead(-1); }
+  else if(e.key==='ArrowDown'){ e.preventDefault(); nudgePlayhead(1); }
+  else if(e.key==='Escape'){ selectedId=null; render(); }
+});
+
+/* ============================ positions manager ============================ */
+function openPositions(){
+  const used=new Set(state.blocks.map(b=>b.positionId));
+  const vis=p=>!p.archived||used.has(p.id);
+  const parents=state.positions.filter(p=>!p.parentId&&!p.reserved);
+  const hkOpts=p=>[1,2,3,4,5,6,7,8,9].map(n=>`<option value="${n}"${p.hotkey===n?' selected':''}>${n}</option>`).join('');
+
+  const rowFor=p=>{
+    const container=!isBookable(p), bill=isBillable(p);
+    return `<div class="prow" data-p="${p.id}">
+      ${container
+        ? `<span class="dim" style="text-align:center;font-size:11px">–</span>`
+        : `<select data-f="hotkey" title="${t('hotkey')}">
+             <option value=""${p.hotkey?'':' selected'}>–</option>${hkOpts(p)}
+           </select>`}
+      <input type="text" value="${esc(p.code)}" data-f="code" ${p.reserved?'disabled':''}>
+      <div class="lab-wrap">${p.parentId?'<span class="kid">└</span>':''}
+        <input type="text" value="${esc(p.label)}" data-f="label" ${p.reserved?'disabled':''}></div>
+      ${p.reserved?'<span></span>':`<select data-f="parentId" title="${t('parentPos')}">
+        <option value=""${p.parentId?'':' selected'}>${t('noParent')}</option>
+        ${parents.filter(x=>x.id!==p.id).map(x=>`<option value="${x.id}"${p.parentId===x.id?' selected':''}>${esc(x.label)}</option>`).join('')}
+      </select>`}
+      ${p.reserved?'<span></span>':`<select data-f="billable" title="${t('billability')}">
+        <option value=""${p.billable==null?' selected':''}>${p.parentId?`(${bill?t('billYes'):t('billNo')})`:t('billInherit')}</option>
+        <option value="1"${p.billable===true?' selected':''}>${t('billYes')}</option>
+        <option value="0"${p.billable===false?' selected':''}>${t('billNo')}</option>
+      </select>`}
+      <input type="color" value="${p.color}" data-f="color" ${p.reserved?'disabled':''}>
+      ${p.reserved?`<span class="dim" style="font-size:10px">${t('locked')}</span>`
+                  :`<button class="mini" data-act="del" title="${t('archive')}">✕</button>`}
+    </div>`;
+  };
+
+  let rows='';
+  state.positions.filter(p=>!p.parentId&&vis(p)).forEach(p=>{
+    rows+=rowFor(p);
+    childrenOf(p.id).filter(vis).forEach(c=>{ rows+=rowFor(c); });
+  });
+
+  openModal(`<h2>${t('positions')}</h2>
+    <div class="ptable">
+      <div class="ph" style="text-align:center">${t('hotkey')}</div>
+      <div class="ph">${t('codePh')}</div>
+      <div class="ph">${t('labelPh')}</div>
+      <div class="ph">${t('parentPos')}</div>
+      <div class="ph">${t('billability')}</div>
+      <div class="ph"></div><div class="ph"></div>
+      ${rows}
+    </div>
+    <h3 class="sub-h">${t('addPosition')}</h3>
+    <div class="ptable add">
+      <span></span>
+      <input type="text" id="np-code" placeholder="${t('codePh')}">
+      <input type="text" id="np-label" placeholder="${t('labelPh')}">
+      <select id="np-parent">
+        <option value="">${t('noParent')}</option>
+        ${parents.map(x=>`<option value="${x.id}">${esc(x.label)}</option>`).join('')}
+      </select>
+      <span></span>
+      <input type="color" id="np-color" value="#5e7ce0">
+      <span></span>
+    </div>
+    <div class="modal-actions"><button class="btn outline" id="np-add">${t('add')}</button>
+      <button class="btn outline" id="pe">${t('exportW')}</button><button class="btn outline" id="pi">${t('importW')}</button>
+      <button class="btn primary" id="pc">${t('done')}</button></div>`, 'wide');
+
+  el('modal').querySelectorAll('.prow').forEach(row=>{
+    const p=posById(row.dataset.p);
+    row.querySelectorAll('[data-f]').forEach(inp=>inp.onchange=e=>{
+      const f=e.target.dataset.f;
+      if(f==='hotkey'){
+        const n=e.target.value?+e.target.value:null;
+        if(n){ const clash=posByHotkey(n); if(clash&&clash.id!==p.id) clash.hotkey=null; }   // slots are unique
+        p.hotkey=n; save(); openPositions(); render(); return;
+      }
+      if(f==='parentId'){
+        const v=e.target.value||null;
+        if(v && childrenOf(p.id).length){ toast(t('tHasChildren')); openPositions(); return; }  // no 3rd level
+        p.parentId=v;
+        if(v){ const par=posById(v); if(par){ p.color=mix(par.color,'#ffffff',0.18); par.hotkey=null; } }
+        if(!isBookable(p)) p.hotkey=null;
+        ensureHotkeys(); save(); openPositions(); render(); return;
+      }
+      if(f==='billable'){
+        p.billable = e.target.value===''?null : e.target.value==='1';
+        save(); openPositions(); render(); return;
+      }
+      p[f]=e.target.value; save(); render();
+    });
+    const del=row.querySelector('[data-act=del]');
+    if(del) del.onclick=()=>{ p.archived=true; p.hotkey=null; ensureHotkeys(); save(); openPositions(); render(); };
+  });
+
+  el('np-add').onclick=()=>{
+    const code=el('np-code').value.trim(), label=el('np-label').value.trim();
+    if(!label){ toast(t('tLabelReq')); return; }
+    const parentId=el('np-parent').value||null;
+    const par=parentId?posById(parentId):null;
+    const color=par?mix(par.color,'#ffffff',0.18):el('np-color').value;
+    state.positions.push({id:uid('p'),code:code||label.toUpperCase().slice(0,8),label,color,
+      archived:false,parentId,billable:null});
+    if(par) par.hotkey=null;            // a project that gains a package stops being bookable
+    ensureHotkeys(); save(); openPositions(); render();
+  };
+  el('pe').onclick=()=>download('positions.json',JSON.stringify(state.positions,null,2));
+  el('pi').onclick=()=>importFile(data=>{ if(Array.isArray(data)){ state.positions=data;
+    if(!state.positions.some(p=>p.id==='pause')) state.positions.unshift(defaults().positions[0]);
+    ensureHotkeys(); save(); openPositions(); render(); toast(t('tPosImported')); }});
+  el('pc').onclick=()=>{ closeModal(); render(); };
+}
+
+/* ============================ data / backup ============================ */
+function openData(){
+  const sn=S().snapMin, tg=S().targetHours, th=Object.assign({},THEME_DEFAULT,S().theme||{});
+  openModal(`<h2>${t('btnSettings')}</h2>
+    <div class="field"><label>${t('language')}</label><select id="set-lang">
+      <option value="de"${lang==='de'?' selected':''}>Deutsch</option>
+      <option value="en"${lang==='en'?' selected':''}>English</option>
+    </select></div>
+    <div class="row">
+      <div class="field"><label>${t('grid')}</label><select id="set-snap">
+        ${[5,10,15,30].map(v=>`<option value="${v}"${v===sn?' selected':''}>${v} min</option>`).join('')}
+      </select></div>
+      <div class="field"><label>${t('dailyTarget')}</label><input type="number" id="set-target" min="0" max="24" step="0.5" value="${tg}"></div>
+      <div class="field"><label>${t('weekTarget')}</label><input type="number" id="set-wtarget" min="0" max="80" step="0.5" value="${S().weekTargetHours||40}"></div>
+    </div>
+    <h3 class="sub-h">${t('theme')}</h3>
+    <div class="th-row">
+      <div class="th-f"><label>${t('themeBg')}</label><input type="color" id="th-bg" value="${th.bg}"></div>
+      <div class="th-f"><label>${t('themeText')}</label><input type="color" id="th-text" value="${th.text}"></div>
+      <div class="th-f"><label>${t('themeAccent')}</label><input type="color" id="th-accent" value="${th.accent}"></div>
+      <button class="btn outline" id="th-reset">${t('themeReset')}</button>
+    </div>
+    <div class="th-presets">${THEME_PRESETS.map((p,i)=>
+      `<button class="th-p" data-preset="${i}" title="${p.n}">
+         <i style="background:${p.bg}"></i><i style="background:${p.accent}"></i><i style="background:${p.text}"></i>
+       </button>`).join('')}</div>
+
+    <h3 class="sub-h">${t('exportSettings')}</h3>
+    <div class="row">
+      <div class="field"><label>${t('dateFmt')}</label><select id="set-datefmt">
+        <option value="dd.mm.yyyy"${S().dateFmt==='dd.mm.yyyy'?' selected':''}>31.12.2026</option>
+        <option value="yyyy-mm-dd"${S().dateFmt==='yyyy-mm-dd'?' selected':''}>2026-12-31</option>
+      </select></div>
+      <div class="field"><label>${t('durFmt')}</label><select id="set-durfmt">
+        <option value="hm"${S().durFmt==='hm'?' selected':''}>${t('durHM')}</option>
+        <option value="dec"${S().durFmt==='dec'?' selected':''}>${t('durDec')}</option>
+      </select></div>
+    </div>
+    <div class="field"><label>${t('columns')}</label>
+      <div style="display:flex;flex-wrap:wrap;gap:10px;margin-top:4px">
+        ${Object.keys(XCOLS).map(k=>`<label class="chk"><input type="checkbox" data-col="${k}" ${(S().exportCols||[]).includes(k)?'checked':''}> ${t(XCOLS[k].t)}</label>`).join('')}
+      </div>
+    </div>
+    <p class="dim">${t('dataNote')}</p>
+    <div class="modal-actions" style="justify-content:flex-start">
+      <button class="btn outline" id="bk-exp">${t('exportBackup')}</button>
+      <button class="btn outline" id="bk-imp">${t('importBackup')}</button>
+    </div>
+    <div class="modal-actions"><button class="btn primary" id="bk-close">${t('done')}</button></div>`);
+  el('set-lang').onchange=e=>{ S().lang=e.target.value; lang=e.target.value; save(); render(); openData(); };
+  el('set-snap').onchange=e=>{ S().snapMin=+e.target.value; save(); renderTimeline(); };
+  el('set-target').onchange=e=>{ S().targetHours=+e.target.value||0; save(); renderTotals(); };
+  const setTheme=patch=>{ S().theme=Object.assign({},THEME_DEFAULT,S().theme||{},patch); save(); applyTheme(); };
+  ['bg','text','accent'].forEach(k=>{
+    const inp=el('th-'+k); if(!inp) return;
+    inp.oninput=e=>setTheme({[k]:e.target.value});          // live preview while dragging
+  });
+  el('th-reset').onclick=()=>{ S().theme=null; save(); applyTheme(); openData(); };
+  el('modal').querySelectorAll('[data-preset]').forEach(b=>b.onclick=()=>{
+    const p=THEME_PRESETS[+b.dataset.preset];
+    S().theme={bg:p.bg,text:p.text,accent:p.accent}; save(); applyTheme(); openData();
+  });
+  el('set-wtarget').onchange=e=>{ S().weekTargetHours=+e.target.value||0; save(); };
+  el('set-datefmt').onchange=e=>{ S().dateFmt=e.target.value; save(); };
+  el('set-durfmt').onchange=e=>{ S().durFmt=e.target.value; save(); };
+  el('modal').querySelectorAll('[data-col]').forEach(cb=>cb.onchange=()=>{
+    S().exportCols=[...el('modal').querySelectorAll('[data-col]')].filter(x=>x.checked).map(x=>x.dataset.col);
+    save();
+  });
+  el('bk-exp').onclick=()=>download('projector-backup.json',JSON.stringify(state,null,2));
+  el('bk-imp').onclick=()=>importFile(data=>{ if(data&&data.blocks&&data.positions){ state=data; lang=S().lang||lang; save(); closeModal(); render(); toast(t('tBackupRestored')); } else toast(t('tNotBackup')); });
+  el('bk-close').onclick=closeModal;
+}
+
+/* ============================ keyboard labeling flow ============================ */
+function selectAndReveal(id){
+  selectedId=id; render();
+  const n=document.querySelector(`[data-id="${id}"]`);
+  if(n&&n.scrollIntoView) n.scrollIntoView({block:'nearest'});
+}
+function unlabeledBlocks(){ return dayBlocks().filter(b=>!b.positionId); }
+// Wraps around, and starts from the current block so repeated `n` walks the whole day.
+function gotoNextUnlabeled(){
+  const un=unlabeledBlocks();
+  if(!un.length){ toast(t('tNoUnlabeled')); return false; }
+  const bl=dayBlocks(), cur=bl.findIndex(b=>b.id===selectedId);
+  const next=un.find(b=>bl.indexOf(b)>cur) || un[0];
+  selectAndReveal(next.id);
+  return true;
+}
+function gotoBlock(dir){
+  const bl=dayBlocks(); if(!bl.length) return;
+  const i=bl.findIndex(b=>b.id===selectedId);
+  const j=i<0 ? (dir>0?0:bl.length-1) : Math.min(bl.length-1,Math.max(0,i+dir));
+  selectAndReveal(bl[j].id);
+}
+function selectedBlock(){                      // only ever the block visible on this day
+  return dayBlocks().find(x=>x.id===selectedId)||null;
+}
+function assignHotkey(n){
+  const b=selectedBlock();
+  if(!b){ toast(t('tSelectFirst')); return; }
+  if(n===0){ b.positionId=null; save(); render(); toast(t('tCleared')); return; }
+  const p=posByHotkey(n);
+  if(!p){ toast(t('tNoHotkey',n)); return; }
+  b.positionId=p.id; save(); render();
+  toast(`${n} · ${p.label}`);
+}
+function focusDesc(){
+  const i=el('ed-desc')||el('now-desc');
+  if(!i){ toast(t('tSelectFirst')); return; }
+  i.focus(); i.select&&i.select();
+}
+
+/* ---- quick-pick overlay: replaces the native <select>, which traps keystrokes ---- */
+let qp=null;   // {items, i, filter}
+function openQuickPick(){
+  const b=selectedBlock();
+  if(!b){ toast(t('tSelectFirst')); return; }
+  qp={items:pickerPositions(),i:0,filter:''};
+  const cur=qp.items.findIndex(p=>p.id===b.positionId);
+  if(cur>=0) qp.i=cur;
+  openModal(`<h2>${t('position')}</h2>
+    <input type="text" id="qp-filter" placeholder="${t('qpFilter')}" autocomplete="off">
+    <div class="qp-list" id="qp-list"></div>
+    <p class="hint" style="margin:8px 0 0">${t('qpHint')}</p>`);
+  const inp=el('qp-filter');
+  inp.oninput=()=>{ qp.filter=inp.value.toLowerCase(); qp.i=0; paintQuickPick(); };
+  inp.onkeydown=e=>{
+    const vis=qpVisible();
+    if(e.key==='ArrowDown'){ e.preventDefault(); qp.i=Math.min(vis.length-1,qp.i+1); paintQuickPick(); }
+    else if(e.key==='ArrowUp'){ e.preventDefault(); qp.i=Math.max(0,qp.i-1); paintQuickPick(); }
+    else if(e.key==='Enter'){ e.preventDefault(); if(vis[qp.i]) pickQuickPick(vis[qp.i].id); }
+    else if(e.key==='Escape'){ e.preventDefault(); closeModal(); }
+    else if(/^[1-9]$/.test(e.key) && !qp.filter){ e.preventDefault();
+      const p=posByHotkey(+e.key); if(p) pickQuickPick(p.id); }
+  };
+  paintQuickPick(); inp.focus();
+}
+function qpVisible(){
+  if(!qp) return [];
+  const f=qp.filter;
+  return qp.items.filter(p=>!f || pathLabel(p).toLowerCase().includes(f) || (p.code||'').toLowerCase().includes(f));
+}
+function paintQuickPick(){
+  const list=el('qp-list'); if(!list||!qp) return;
+  const vis=qpVisible();
+  if(qp.i>=vis.length) qp.i=Math.max(0,vis.length-1);
+  list.innerHTML=vis.map((p,i)=>`
+    <div class="qp-item${i===qp.i?' cur':''}" data-pick="${p.id}">
+      <span class="sw" style="background:${p.color}"></span>
+      <span class="qp-lab">${splitLabelHtml(p)}</span>
+      <span class="qp-code">${esc(p.code||'')}</span>
+      ${p.hotkey?`<kbd>${p.hotkey}</kbd>`:''}
+    </div>`).join('')||`<p class="dim" style="margin:8px 0">—</p>`;
+  list.querySelectorAll('[data-pick]').forEach(n=>n.onclick=()=>pickQuickPick(n.dataset.pick));
+  const cur=list.querySelector('.qp-item.cur'); if(cur&&cur.scrollIntoView) cur.scrollIntoView({block:'nearest'});
+}
+function pickQuickPick(id){
+  const b=selectedBlock();
+  if(b){ b.positionId=id; save(); }
+  qp=null; closeModal(); render();
+  const p=posById(id); if(p) toast(p.label);
+}
+
+/* ============================ shortcuts overlay ============================ */
+function shortcutGroups(){
+  return [
+    [t('scGeneral'), [
+      [t('scToggleView'), ['W']],
+      [t('scPrevNext'),   ['←','→']],
+      [t('scToday'),      ['T']],
+      [t('scHelp'),       ['?']],
+      [t('scEsc'),        ['Esc']]
+    ]],
+    [t('scMarker'), [
+      [t('scMove'),  ['↑','↓']],
+      [t('scSplit'), ['S']]
+    ]],
+    [t('scLabeling'), [
+      [t('scAssign'),     ['1','9']],
+      [t('scClearPos'),   ['0']],
+      [t('scEditDesc'),   ['↵','L']],
+      [t('scNextUn'),     ['N']],
+      [t('scNextBlock'),  ['⇥']],
+      [t('scQuickPick'),  ['P']],
+      [t('scCommitNext'), ['⌘↵']]
+    ]],
+    [t('scBlock'), [
+      [t('scMerge'),  ['M']],
+      [t('scDelete'), ['Del']]
+    ]],
+    [t('scExport'), [
+      [t('scCopyCell'), ['↵']],
+      [t('scNavCell'),  ['↑','↓']]
+    ]]
+  ];
+}
+function openShortcuts(){
+  const secs=shortcutGroups().map(([h,rows])=>`
+    <div class="sc-sec"><h4>${h}</h4>${rows.map(([lbl,keys])=>
+      `<div class="sc-row"><span class="lbl">${lbl}</span><span class="sc-keys">${
+        keys.map(k=>`<kbd>${k}</kbd>`).join('<span>/</span>')}</span></div>`).join('')}</div>`).join('');
+  const how=['hwStart','hwSwitch','hwBreak','hwStop','hwSessions'].map(k=>{
+    const [term,desc]=t(k);
+    return `<div class="hw-row"><span class="hw-t">${term}</span><span class="hw-d">${desc}</span></div>`;
+  }).join('');
+  openModal(`<h2>${t('help')}</h2>
+    <div class="sc-sec"><h4>${t('howItWorks')}</h4>${how}</div>
+    <div class="sc-sec"><h4>${t('shortcuts')}</h4></div>
+    <div class="sc-grid">${secs}</div>
+    <div class="modal-actions"><button class="btn primary" id="sc-close">${t('close')}</button></div>`);
+  el('sc-close').onclick=closeModal;
+}
+
+/* ============================ week view ============================ */
+function weekStats(ws){
+  const days=[], per={}; let work=0, pause=0, unlabeledTime=0, unlabeledCount=0;
+  for(let i=0;i<7;i++){
+    const d=addDays(ws,i), dm=d.getTime(), bl=blocksOfDay(dm);
+    let w=0,p=0,u=0,uc=0;
+    bl.forEach(b=>{
+      const dur=bEnd(b)-b.start;
+      const key=b.positionId||'__un';
+      per[key]=(per[key]||0)+dur;
+      if(b.positionId===PAUSE()) p+=dur;
+      else if(b.positionId) w+=dur;
+      else { u+=dur; uc++; }
+    });
+    work+=w; pause+=p; unlabeledTime+=u; unlabeledCount+=uc;
+    days.push({date:d, ms:dm, work:w, pause:p, unlabeled:u, count:bl.length, compl:complianceOf(bl)});
+  }
+  return {days, per, work, pause, unlabeledTime, unlabeledCount};
+}
+function renderWeek(){
+  const ws=startOfWeek(selectedDate), st=weekStats(ws), wv=el('weekview');
+  const WPPM=0.8;
+  // shared time window across the week
+  let minM=S().dayStartHour*60, maxM=S().dayEndHour*60;
+  st.days.forEach(d=>blocksOfDay(d.ms).forEach(b=>{
+    minM=Math.min(minM,(b.start-d.ms)/60000); maxM=Math.max(maxM,(bEnd(b)-d.ms)/60000);
+  }));
+  minM=Math.max(0,Math.floor(minM/60)*60); maxM=Math.min(24*60,Math.ceil(maxM/60)*60);
+  if(maxM<=minM) maxM=minM+60;
+  const H=(maxM-minM)*WPPM, todayMs=todayMid();
+  const names=t('dayNames');
+  let head=`<div class="wk-head"><div></div>`+st.days.map((d,i)=>
+    `<div class="wk-dh${d.ms===todayMs?' today':''}${[0,6].includes(d.date.getDay())?' we':''}" data-day="${d.ms}">
+       <div class="wk-dn">${names[i]}</div>
+       <div class="wk-dt">${pad(d.date.getDate())}.${pad(d.date.getMonth()+1)}.</div>
+       <div class="wk-dt" style="margin-top:2px">${d.work?fmtDur(d.work):'–'}</div>
+     </div>`).join('')+`</div>`;
+  let gut=`<div class="wk-gut">`;
+  for(let hr=Math.ceil(minM/60); hr<=Math.floor(maxM/60); hr++)
+    gut+=`<div class="wk-hl" style="top:${(hr*60-minM)*WPPM}px">${pad(hr)}:00</div>`;
+  gut+=`</div>`;
+  const lines=`repeating-linear-gradient(to bottom, var(--line) 0 1px, transparent 1px ${60*WPPM}px)`;
+  let cols=st.days.map(d=>{
+    const bl=blocksOfDay(d.ms);
+    const inner=bl.map(b=>{
+      const top=((b.start-d.ms)/60000-minM)*WPPM;
+      const ht=Math.max(9,((bEnd(b)-b.start)/60000)*WPPM);
+      const p=posById(b.positionId);
+      return `<div class="wk-blk${p?'':' un'}" style="top:${top}px;height:${ht}px;${p?`background:${p.color};`:''}"
+        title="${esc((p?p.label:t('unlabeled'))+' · '+fmtHM(b.start)+'–'+fmtHM(bEnd(b)))}">${ht>18?esc(p?p.label:t('unlabeled')):''}</div>`;
+    }).join('');
+    return `<div class="wk-col${d.ms===todayMs?' today':''}${[0,6].includes(d.date.getDay())?' we':''}" data-day="${d.ms}" style="height:${H}px;background-image:${lines}">${inner}</div>`;
+  }).join('');
+  wv.innerHTML=head+`<div class="wk-grid" style="height:${H}px">${gut}${cols}</div>
+    <p class="hint wk-hint">${t('clickDayHint')}</p>`;
+  wv.querySelectorAll('[data-day]').forEach(n=>n.onclick=()=>{
+    selectedDate=new Date(+n.dataset.day); viewMode='day'; selectedId=null; render();
+  });
+  renderWeekRail(ws,st);
+}
+function renderWeekRail(ws,st){
+  const we=addDays(ws,6);
+  const fmtD=d=>`${pad(d.getDate())}.${pad(d.getMonth()+1)}.`;
+  const target=(S().weekTargetHours||40)*3600000;
+  const diff=st.work-target, over=diff>=0;
+  // summary
+  el('now-card').innerHTML=`<h3>${t('week')} ${isoWeekNo(ws)}</h3>
+    <div class="dim tabnum" style="margin-bottom:8px">${t('wkRange',fmtD(ws),fmtD(we))}</div>
+    <div class="elapsed tabnum">${fmtDur(st.work)}</div>
+    <div class="dim tabnum">${t('weekTotal')} / ${S().weekTargetHours||40}:00 ·
+      ${over?t('over'):t('under')} ${fmtDur(Math.abs(diff))}</div>
+    <div class="bar" style="margin-top:10px"><i style="width:${Math.min(100,target?st.work/target*100:0)}%;background:var(--accent-bright)"></i></div>
+    <div class="tline" style="margin-top:10px"><span class="dim">${t('breakRow')}</span><span class="tabnum dim">${fmtDur(st.pause)}</span></div>
+    ${billSplitHtml(st.days.flatMap(d=>blocksOfDay(d.ms)))}
+    ${st.unlabeledCount?`<div class="compl warn">${t('weekUnlabeled',st.unlabeledCount)}</div>`:''}`;
+  // by position
+  // roll work packages up into their project, listing the packages beneath
+  const groups={};
+  Object.entries(st.per).filter(([k])=>k!=='__un'&&k!==PAUSE()).forEach(([k,v])=>{
+    const p=posById(k); if(!p) return;
+    const r=rootOf(p);
+    const g=groups[r.id]=groups[r.id]||{pos:r,total:0,kids:[]};
+    g.total+=v;
+    if(r.id!==p.id) g.kids.push([p,v]);
+  });
+  const rows=Object.values(groups).sort((a,b)=>b.total-a.total);
+  const totalWork=st.work||1;
+  el('editor-card').hidden=false;
+  el('editor-card').innerHTML=`<h3>${t('byPosition')}</h3>`+(rows.length?rows.map(g=>{
+    const pctv=Math.round(g.total/totalWork*100);
+    const kids=g.kids.sort((a,b)=>b[1]-a[1]).map(([p,v])=>
+      `<div class="stat-top" style="font-size:11.5px;color:var(--dim);padding-left:12px">
+         <span>${esc(p.label)}</span><span class="tabnum">${fmtDur(v)}</span></div>`).join('');
+    return `<div class="stat">
+      <div class="stat-top"><span>${esc(g.pos.label)}<span class="pct">${pctv}%</span></span><span class="tabnum">${fmtDur(g.total)}</span></div>
+      <div class="bar"><i style="width:${g.total/totalWork*100}%;background:${g.pos.color}"></i></div>
+      ${kids}
+    </div>`;
+  }).join(''):`<p class="dim" style="margin:0">${t('noDataWeek')}</p>`);
+  // per day
+  const maxDay=Math.max(...st.days.map(d=>d.work+d.pause),1);
+  const names=t('dayNames');
+  el('totals-card').innerHTML=`<h3>${t('perDay')}</h3>`+st.days.map((d,i)=>{
+    const tot=d.work+d.pause;
+    return `<div class="dayrow${tot?'':' zero'}">
+      <span class="dim">${names[i]}</span>
+      <span class="dbar">
+        <i style="width:${d.work/maxDay*100}%;background:var(--accent-bright)"></i>
+        <i style="width:${d.pause/maxDay*100}%;background:var(--break)"></i>
+      </span>
+      <span class="tabnum">${d.work?fmtDur(d.work):'–'}${d.compl.viol?`<span class="flag warn">${t('complWarnShort')}</span>`:''}</span>
+    </div>`;
+  }).join('');
+}
+
+/* ============================ Projectile export ============================ */
+// Merge consecutive same-position blocks into one row. This is the main lever for
+// reducing hand-entered cells: a day of many small blocks collapses to a few rows.
+function mergedRows(blocks){
+  const out=[];
+  blocks.filter(b=>b.end!=null).forEach(b=>{
+    const last=out[out.length-1];
+    const d=(b.description||'').trim();
+    if(last && last.positionId===b.positionId && Math.abs(last.end-b.start)<1000){
+      last.end=b.end;
+      if(d && !last.descs.includes(d)) last.descs.push(d);
+    } else {
+      out.push({start:b.start,end:b.end,positionId:b.positionId,descs:d?[d]:[]});
+    }
+  });
+  return out;
+}
+function fmtDate(ms){
+  const d=new Date(ms), dd=pad(d.getDate()), mm=pad(d.getMonth()+1), yy=d.getFullYear();
+  return S().dateFmt==='yyyy-mm-dd' ? `${yy}-${mm}-${dd}` : `${dd}.${mm}.${yy}`;
+}
+function fmtDurExport(ms){
+  if(S().durFmt==='dec'){ const v=(ms/3600000).toFixed(2); return lang==='de'?v.replace('.',','):v; }
+  return fmtDur(ms);
+}
+const XCOLS={
+  date: {t:'colDate',  v:r=>fmtDate(r.start)},
+  start:{t:'colStart', v:r=>fmtHM(r.start)},
+  end:  {t:'colEnd',   v:r=>fmtHM(r.end)},
+  dur:  {t:'colDur',   v:r=>fmtDurExport(r.end-r.start)},
+  proj: {t:'colProject',v:r=>{ const p=posById(r.positionId), pr=p&&projectOf(p); return pr?(pr.code||pr.label):''; }},
+  pos:  {t:'colPos',   v:r=>{ const p=posById(r.positionId); return p?(p.code||p.label):''; }},
+  desc: {t:'colDesc',  v:r=>r.descs.join(' · ')}
+};
+function activeCols(){ const c=S().exportCols||[]; return Object.keys(XCOLS).filter(k=>c.includes(k)); }
+
+let xstate=null;   // {cells:[{r,c,val}], i}
+
+function openExport(){
+  const blocks=dayBlocks().filter(b=>b.end!=null);
+  if(!blocks.length){ toast(t('tNothingExport')); return; }
+  if(blocks.some(b=>!b.positionId)){
+    openModal(`<h2>${t('projExport')}</h2>
+      <div class="compl warn" style="margin:0 0 14px">${t('blockedUnlabeled')}</div>
+      <div class="modal-actions"><button class="btn primary" id="x-close">${t('close')}</button></div>`);
+    el('x-close').onclick=closeModal; return;
+  }
+  const rows=mergedRows(blocks), cols=activeCols();
+  const cells=[];
+  rows.forEach((r,ri)=>cols.forEach((c,ci)=>cells.push({r:ri,c:ci,val:XCOLS[c].v(r)})));
+  xstate={cells,i:0};
+  const cs=complianceOf(blocks);
+  const warn=cs.viol?`<div class="compl warn" style="margin:0 0 10px">${t('warnBreak')}</div>`:'';
+  openModal(`<h2>${t('projExport')}</h2>${warn}
+    <div class="xbar"><span>${t('rowsCells',rows.length,cells.length)}</span><span class="prog" id="x-prog"></span></div>
+    <div class="xwrap"><table class="xt">
+      <thead><tr>${cols.map(c=>`<th>${t(XCOLS[c].t)}</th>`).join('')}</tr></thead>
+      <tbody>${rows.map((r,ri)=>`<tr>${cols.map((c,ci)=>{
+        const idx=ri*cols.length+ci;
+        return `<td><div class="xc" data-x="${idx}">${esc(XCOLS[c].v(r))||'&nbsp;'}</div></td>`;
+      }).join('')}</tr>`).join('')}</tbody>
+    </table></div>
+    <p class="hint" style="margin:0 0 12px">${t('exportHint')}</p>
+    <div class="modal-actions" style="justify-content:flex-start">
+      <button class="btn outline" id="x-row">${t('copyRow')}</button>
+      <button class="btn outline" id="x-all">${t('copyAll')}</button>
+      <button class="btn outline" id="x-reset">${t('reset')}</button>
+    </div>
+    <div class="modal-actions"><button class="btn primary" id="x-close">${t('close')}</button></div>`);
+  el('modal').querySelectorAll('.xc').forEach(d=>d.onclick=()=>{ xstate.i=+d.dataset.x; copyCurrent(); });
+  el('x-row').onclick=()=>{ const ri=Math.floor(xstate.i/cols.length);
+    copyText(cols.map((c,ci)=>cells[ri*cols.length+ci].val).join('\t')).then(()=>toast(t('tRowCopied'))); };
+  el('x-all').onclick=()=>{ copyText(rows.map(r=>cols.map(c=>XCOLS[c].v(r)).join('\t')).join('\n')).then(()=>toast(t('tAllCopied'))); };
+  el('x-reset').onclick=()=>{ xstate.i=0; paintExport(); };
+  el('x-close').onclick=closeModal;
+  paintExport();
+}
+function paintExport(){
+  if(!xstate) return;
+  const p=el('x-prog'); if(p) p.textContent=t('cellProgress',Math.min(xstate.i+1,xstate.cells.length),xstate.cells.length);
+  el('modal').querySelectorAll('.xc').forEach(d=>{
+    const i=+d.dataset.x;
+    d.classList.toggle('cur',i===xstate.i);
+    d.classList.toggle('done',i<xstate.i);
+  });
+  const cur=el('modal').querySelector('.xc.cur'); if(cur&&cur.scrollIntoView) cur.scrollIntoView({block:'nearest'});
+}
+function copyCurrent(){
+  if(!xstate) return;
+  const cell=xstate.cells[xstate.i]; if(!cell) return;
+  const advance=()=>{
+    if(xstate.i<xstate.cells.length-1){ xstate.i++; paintExport(); }
+    else { toast(t('tExportDone')); paintExport(); }
+  };
+  if(!cell.val){ toast(t('tEmptyCell')); advance(); return; }   // nothing to paste — just move on
+  copyText(cell.val).then(ok=>{
+    if(!ok){ toast(t('tCopyFail')); return; }                   // never advance on a failed copy
+    toast(t('tCopied',cell.val));
+    advance();
+  });
+}
+function copyText(s){
+  return new Promise(res=>{
+    if(navigator.clipboard && window.isSecureContext){
+      navigator.clipboard.writeText(s).then(()=>res(true)).catch(()=>res(fallbackCopy(s)));
+    } else res(fallbackCopy(s));
+  });
+}
+function fallbackCopy(s){
+  const ta=document.createElement('textarea'); ta.value=s;
+  ta.style.cssText='position:fixed;top:0;left:0;opacity:0';
+  document.body.appendChild(ta); ta.focus(); ta.select();
+  let ok=false; try{ ok=document.execCommand('copy'); }catch(e){}
+  document.body.removeChild(ta); return ok;
+}
+
+/* ============================ calendar (ICS) export ============================ */
+function dtICS(ms){ const d=new Date(ms); return d.getFullYear()+pad(d.getMonth()+1)+pad(d.getDate())+'T'+pad(d.getHours())+pad(d.getMinutes())+'00'; }
+function exportICS(){
+  const blocks=dayBlocks().filter(b=>b.end!=null);
+  if(!blocks.length){ toast(t('tNothingExport')); return; }
+  let ics='BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//Projector//EN\r\nCALSCALE:GREGORIAN\r\n';
+  blocks.forEach(b=>{
+    const p=posById(b.positionId); const sum=(p?p.label:t('unlabeled'))+(b.description?' · '+b.description:'');
+    ics+='BEGIN:VEVENT\r\n'+`UID:${b.id}@projector\r\n`+`DTSTART:${dtICS(b.start)}\r\n`+`DTEND:${dtICS(b.end)}\r\n`+`SUMMARY:${sum.replace(/[\r\n]/g,' ')}\r\n`+'END:VEVENT\r\n';
+  });
+  ics+='END:VCALENDAR\r\n';
+  const name='projector-'+new Date(dayStartMs()).toISOString().slice(0,10)+'.ics';
+  download(name,ics,'text/calendar');
+  toast(t('tCalExported'));
+}
+
+/* ============================ modal & file utils ============================ */
+function openModal(html,cls){ const m=el('modal'); m.className='modal'+(cls?' '+cls:''); m.innerHTML=html; el('overlay').style.display='flex'; }
+function closeModal(){ el('overlay').style.display='none'; xstate=null; qp=null; }
+el('overlay').addEventListener('mousedown',e=>{ if(e.target===el('overlay')) closeModal(); });
+function download(name,text,type='application/json'){
+  const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([text],{type})); a.download=name; a.click(); URL.revokeObjectURL(a.href);
+}
+function importFile(cb){
+  const inp=el('file-in'); inp.onchange=()=>{ const f=inp.files[0]; if(!f)return; const r=new FileReader(); r.onload=()=>{ try{ cb(JSON.parse(r.result)); }catch(e){ toast(t('tInvalidJson')); } inp.value=''; }; r.readAsText(f); }; inp.click();
+}
+let toastT; function toast(msg){ const t=el('toast'); t.textContent=msg; t.classList.add('show'); clearTimeout(toastT); toastT=setTimeout(()=>t.classList.remove('show'),2200); }
+
+/* ============================ overnight safety net ============================ */
+function checkStale(){
+  const r=runningBlock(); if(!r)return;
+  const hrs=(now()-r.start)/3600000;
+  if(hrs>=S().staleHours){
+    openModal(`<h2>${t('stillRunning')}</h2>
+      <p>${t('staleText', new Date(r.start).toLocaleDateString(loc())+' '+fmtHM(r.start), hrs.toFixed(1))}</p>
+      <div class="field"><label>${t('endItAt')}</label><input type="text" id="st-time" inputmode="numeric" placeholder="HH:MM" value="${fmtHM(now())}"></div>
+      <div class="modal-actions">
+        <button class="btn outline" id="st-keep">${t('keepRunning')}</button>
+        <button class="btn primary" id="st-stop">${t('stopIt')}</button>
+      </div>`);
+    el('st-keep').onclick=closeModal;
+    el('st-stop').onclick=()=>{ const v=parseHMok(el('st-time').value); let end=v!=null?v:now(); if(end<=r.start) end=now(); r.end=end; save(); closeModal(); render(); };
+  }
+}
+
+/* ============================ boot ============================ */
+load(); applyTheme(); selectedDate=new Date(todayMid()); render(); checkStale();
+setInterval(()=>{
+  if(drag.active || viewMode!=='day' || el('overlay').style.display==='flex' || !isToday()) return;
+  const r=runningBlock(); if(!r) return;
+  renderTimeline(); renderTotals();
+  const ee=el('now-elapsed'); if(ee) ee.textContent=fmtDur(now()-r.start);
+},1000);
+</script>
+</body>
+</html>

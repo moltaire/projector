@@ -1,0 +1,26 @@
+# --- macOS ---
+.DS_Store
+._*
+.Spotlight-V100
+.Trashes
+
+# --- editors ---
+.vscode/
+.idea/
+*.swp
+*~
+
+# --- Claude Code local scaffolding ---
+.claude/
+
+# --- app exports ---
+# This repo is public and these files contain real project names, work-package
+# names and booked hours. Ignored so a stray download into the folder can never
+# be committed by accident.
+projector-backup*.json
+positions.json
+projector-*.ics
+*.ics
+
+# --- in case tooling is ever added ---
+node_modules/
