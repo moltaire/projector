@@ -2,7 +2,7 @@
 <html lang="en-GB">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Projector</title>
 <meta name="description" content="Local-first time tracking that prepares Projectile timesheets. No install, no accounts, data stays in your browser.">
 <meta name="theme-color" content="#1c1b22">
@@ -12,12 +12,14 @@
 <meta name="apple-mobile-web-app-title" content="Projector">
 <meta name="robots" content="noindex">
 <link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2032%2032%22%3E%3Crect%20width%3D%2232%22%20height%3D%2232%22%20rx%3D%227%22%20fill%3D%22%231c1b22%22%2F%3E%3Crect%20x%3D%228%22%20y%3D%226%22%20%20width%3D%2216%22%20height%3D%227%22%20rx%3D%222%22%20fill%3D%22%235e7ce0%22%2F%3E%3Crect%20x%3D%228%22%20y%3D%2215%22%20width%3D%2216%22%20height%3D%224%22%20rx%3D%221.5%22%20fill%3D%22%23d49a4a%22%2F%3E%3Crect%20x%3D%228%22%20y%3D%2221%22%20width%3D%2216%22%20height%3D%225%22%20rx%3D%222%22%20fill%3D%22%23a8b86a%22%2F%3E%3C%2Fsvg%3E">
-<link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2032%2032%22%3E%3Crect%20width%3D%2232%22%20height%3D%2232%22%20rx%3D%227%22%20fill%3D%22%231c1b22%22%2F%3E%3Crect%20x%3D%228%22%20y%3D%226%22%20%20width%3D%2216%22%20height%3D%227%22%20rx%3D%222%22%20fill%3D%22%235e7ce0%22%2F%3E%3Crect%20x%3D%228%22%20y%3D%2215%22%20width%3D%2216%22%20height%3D%224%22%20rx%3D%221.5%22%20fill%3D%22%23d49a4a%22%2F%3E%3Crect%20x%3D%228%22%20y%3D%2221%22%20width%3D%2216%22%20height%3D%225%22%20rx%3D%222%22%20fill%3D%22%23a8b86a%22%2F%3E%3C%2Fsvg%3E">
+<link rel="apple-touch-icon" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAALQAAAC0CAMAAAAKE/YAAAAAYFBMVEWuv22ouGqouGmmtmnbn0zUmkrQmkvHkUePoYNhgOlofsVefOBefN+DcURde95WcMg0OU8nJSkeHiQdHCQeHCIdHCIcHCIdGyIcGyMcGyIbGyIaGSEaGB8YFhkUFR4REB0+3/LjAAADZUlEQVR42u3b3c7aMAwG4LCUlgpC81c+Smhy/3e5dGjSTnbgzoZle30B7SPLJI5T1NJgKKCBBhpooIEGGmiggQYaaKCBBhpooIEGGmig/xx9Czxxfxs6hOW58kSqz3oH+h7WdXGWJ/y67mCT0SGt1k7XkSUu02TXZ5BGhzVM53E8X1miPmmc3Bpk0WF10ya+nHnicr2OV0tVK6q5vuTMGjXdVDUx02niNm/qq6PVtaIl2vKbq3qcVjH0/emu58tZQk0rEPX5RNNTTUNPMujLOIXlLoK+L2EaJapjC1J9qL+gpMlFDTTQQAMNNNBAAw000EAD/W+hWzwjNnkab3Pu0eSEqclZXptT00bn0y3eBLR559Lm7Vab94ht3tg2ejfe6lcIQAMN9MfRs/eRJbyf34SefSol80TJc3wH2ufsDFu4nP2XNPorFmf6ji2OxpUlyqLnpVTyse+PLFGf03UmpSiLzqaSj4xR2YNPsyA6FtOxkn+wO5MF0TG77sgfVV2iIFog0VsMjlQg6vOJfqXaC6F9EUp0/S2mL7FMDzKZptYHAT0nNwiZj53LsT20BfrXviOJ1XQvVdOiq4fYjhizlUFLrtO3JUrVh8tSO2KtD5FUy/YeMs1HT+5Naeg51QLpuc09aWehHwJiiqbrejb3dnQZXPaLJLqqsx22sx3PUtd1g0lUM/00PscSrBmYwuw51+6Ze/hHLsmxRKxP8nTBrgmT90tiice+EdPeWd7MEhhAAg30/4dub/VocJ32C9uO6Mt7dsTZb73HSfOEsbX3kP+Pbe3ytFLqwBL1Qdo8pLu8kIKpL9KaB709SJ2E++k5+ZPiEv+EK01V09A+G8VLfqklz4j1NM5v3tS0sQdtLPYIWgJdQ27uIZRoeqqJszyhRCst90NMJyH0Qbun2E2AELnWh6WsekADDTTQQP+mL9VKBv3t4ITQS8hGbkcUvEcUa5iy1P9c5uzESlqsy5NKtd6aPKnvPV7rh/702kE+I9ZjALdak09b1BGCz/bAehyvZGWeN9lhjS+uvubANGDSB6W0LTdhdM11sqdtNMQT2rhCnubt+Kp3KU9neb7ptW7eM4HcM+r1cy5MkZc9s959Q/XgmSLsej3uXIAGGmiggQYaaKCBBhpooIEGGmiggQYaaKCbR38HkgcWd65ICj4AAAAASUVORK5CYII=">
+<link rel="manifest" href="data:application/manifest+json;base64,eyJuYW1lIjoiUHJvamVjdG9yIiwic2hvcnRfbmFtZSI6IlByb2plY3RvciIsImRlc2NyaXB0aW9uIjoiVGltZSB0cmFja2luZyB0aGF0IHByZXBhcmVzIFByb2plY3RpbGUgdGltZXNoZWV0cy4gTG9jYWwtZmlyc3QuIiwiZGlzcGxheSI6InN0YW5kYWxvbmUiLCJvcmllbnRhdGlvbiI6ImFueSIsImJhY2tncm91bmRfY29sb3IiOiIjMWMxYjIyIiwidGhlbWVfY29sb3IiOiIjMWMxYjIyIiwibGFuZyI6ImRlIiwiaWNvbnMiOlt7InNyYyI6ImRhdGE6aW1hZ2UvcG5nO2Jhc2U2NCxpVkJPUncwS0dnb0FBQUFOU1VoRVVnQUFBTUFBQUFEQUNBTUFBQUJsQXB3MUFBQUFZRkJNVkVXdHZteW91R3FvdUdtbnQycmFuMHpVbWtyVG1VcktsRWlnckdSbWdkMWZmdU5lZk9CZWZOeGhkc1JFVFZZN09FRW5KU2dnSVN3ZUhTTWVIQ0lkSENRZEhDSWNIQ01kR3lJY0d5TWNHeUljR3lFYkd5SWFHU0FhR0NBWUZoa1RFeDdkTktNUUFBQUVCa2xFUVZSNDJ1M2M2NUtjSUJBRllNdzRxK1VGRmNGVlIrVDkzekl3eWU5VTBlbW1NcFhURCtEeUNialN4MTExZkhncEFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQ0FqTnI1cWp4Z3MvYTgrTXBhV3hTdzJldSs3Y0pYZDd5Y0xRZUl3MS8wT0E1c05ZNTZpb1JTQUhzdjQ5QngxempkMjE0RVlPOXA2UHBoNkJrclhxM3I5SDN1QlFEMjFsM0hPdnJmaGo0S05ubEF2UC94OXZjU05VU0JsUWJzMXpKME11TlBnaWxib0xJbllCUWJmd1NNbS9BTTdINFJHejV0RWFuOEhUeElBa1p4d0NnSjZMdlJaajVLOHdEN2FjZXVGNjNjYmF6eW4wRzk2Q1lBQUFBQUFBQUFBQUFBQUFBQUFBQUFBSUIvRTNBdXdvZDZZWUI4VzJWWXJsMFc4T0dOclMzMXBqKzV0U2k4aHZKWEVBRWdPQVdVZ0lBUWNJanRBc0lPb0VSTVd4SU1NdU5mcmswZXNKL3ZrSXlaTUF4ZEhML1BUMW9KS2VXKzM5UFlkU21vNUtvK1htN1E5MFZJaW1sQjk3M3BjZXc1UStKUkw3ZmRqa0tBdzU3M2JTZkdXbTdTN2YrTGp6MXMrbHFDcnk1cmlWK3MwRCszMlMxajBiKzN3UmRiQUFBQXdPY0NIRnQ5bHdjNFkxNThIeTIrVnJNV0JUampRekF6VzVrUXdycVdBOFRoejdwaExUM0ZPMUlLWU1MY05IVmRQOWtxWGF5WmduTkZBQ1pNVGYzOFlxNkkwT0hsQ2dEaStPczYva0R1K3ZxcW0xQUFrTWIvNUIvK0w0SE8zd2U1QU9mbnBoWVpmeUxVVTdaQVpVK0EzUGdqb0hISEpncElFL0FVQTFDbVFPVk9nSmFiZ1BjVWhGVVVzRXF1b0RmQW5FNFE0TTVWRkJBSmMrWWF5Z1Jjb2x1QXNnbitPNENSWFVMU0FQRk4vR3pteStFeCt1YzNvYWNvUUF2L0lwTmRRNFFWUkhnWG1pVGVwY2tUUUhtZEZ0c0ZwQU5CL29IR3BVVWtRRWdIR25PVkFMemlITlJmdkliM21iSXhQdjljVHpnVE81Y094VFhyc1RoZXJ0SGhJdlFsYUcyVjRLYW1TYjBFcG5vMmpaNUpUUWxpWTh1OFVsK0xNU09iQStuMi8wVnIwU1FEWDEzT3VLTW80RGkrVjhOV0s3MjdpM3dBQUFBQVFFYm0zRllla0RJeXoxYVhNV1gvczRkQVJ1WnR3VmVKZDBiV3NsYnBqS3g5S0tVcXRrb1hhMHRtWksycUhzd1ZFVG9jWlRJeXJkU2pZcTlJMEw1TVJoWnZmeVZRajRjcWs1RzFTbVQ4YjBHSmpFeHMvRkdnV3Z2NkZnWEVDWGhVWW9DS01BWDV6VjI1Q1hoUGdUaWdGUWFZbDJoRzlqS2lnS3I2TVhuUmhDWStneXBKUVA0bUFBQUFBQUFBb0NSQStoZlpqMG80cWJmQ3J4SlZPM3ZwcEY3NFhjakwvakdvOFZNbHVnWEVrM3JSTlVSWVFaU2tYb2s5aHlpSFlrcFNMM1ltanNlWkFuL05hcE5Bb3EyU1RqTytSRkovK05RWTRqVzhPMXR0d2FTK1RjMUF4cjVjdkZ5cmd5K1gxTnVwYlZOSGs2bXF0dFZ6SVAzbmFXSlNmNFJnSnQ2azNwZE82ay9QbWRUYjhrbjlZZm1TZXVyb2tWSUNBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBSjlZUHdFVWozcjJsRHF0cmdBQUFBQkpSVTVFcmtKZ2dnPT0iLCJzaXplcyI6IjE5MngxOTIiLCJ0eXBlIjoiaW1hZ2UvcG5nIiwicHVycG9zZSI6ImFueSBtYXNrYWJsZSJ9LHsic3JjIjoiZGF0YTppbWFnZS9wbmc7YmFzZTY0LGlWQk9SdzBLR2dvQUFBQU5TVWhFVWdBQUFnQUFBQUlBQ0FNQUFBRERwaVRJQUFBQVlGQk1WRVd0dm15b3VHcmFuMHpVbWt2VW1rcklvVktudDJxZ3IyYlRtVXJMbEVobmdkVmVmZUZlZk9CZWZOOWdkc1JFVEZZNk9FSW5KU2dnSUN3ZUhTTWRIU1VkSENRZEhDSWNIQ01kR3lJY0d5TWNHeUljR3lFYUdTQWFHQ0FZRmhvVEV4NzY4eXNtQUFBTCtrbEVRVlI0MnUzZGpYTGF1aFpBWVJNWUNCT3cvSU1FT0piMS9tOTV0MHlUNWt5YjNyWno1bWhIZTYwM3NQVlpzaDFpTlJPWnJ1RVVBSUFBUUFBZ0FCQUFDQUFFQUFJQUFZQUFRQUFnQUJBQUNBQUVBQUlBQVlBQVFBQWdBQkFBQ0FBRUFBSUFBWUFBUUFBZ0FCQUFDQUFFQUFJQUFZQUFRQUFnQUJBQUNBQUVBQUlBQVlBQVFBQWdBQkFBQ0FBRUFBSUFBWUFBUUFBZ0FCQUFDQUFFQUFJQUFZQUFRQUFnQUJBQUNBQUVBQUlBQVlBQVFBQWdBQkFBQ0FBRUFBSUFBWUFBUUFBZ0FCQUFDQUFFQUFJQUFZQUFRQUFnQUJBQUFNQXBBQUFCZ0FCQUFDQUFFQUFVZGE4aUFQeE5WMy94ZnE0aW53OEZBSCtTdjl6aklnMVZsSTlrbVpRYVVBamdmcmt1eXp3NDE3YnR1WUxrTUp3YnBtVjV2WGdBL01id3o4dlN1ZmI4VWxXbnR1MHV5Nkp2R3RBR1FJWi9jRzArWmVlcU9za1J0VTVXZ3dzQWZubm50MXpjK1RINHA3cVNJNUxqYWdlNUdRREFMeTcvZlBWWE4vanZCazR2Wi9lcWF4TFFCT0N5REJVUC84T0FMQVRkNHE4QStObExuNlU3MXozODZ5enc4dUtXMlFQZ2grVi9XcHhjL3FmcWszV2d2ZW9SME9nWi83YjZ5Lzk5RW1ndml3ZkFQK1ovTytPLzNnbm9FYUFFd0RXUC84bE1XY0I4QmNDSCszOW5hZnhYQVVxbUFCVUEvTkxaR3Y4c3dPbDRINkFCd0gwZXp0WUFpSUJPeFJ6UXFKZ0FXblBqbnhlQlliNER3T0lOZ0twRm9GR3dBRnhhaXdCT0p4V0xRTU1FWVB0Sm9Day9BUmk4QTFSMEg5Z3dBUlNkQWk3bUFaaDhCSGdEY0I3aTNUZ0FnKytBZEQwSU5Ld0FSZGVBK1dZY3dHMXVMUU1vdndZVUJuQ1BacDhCM3RZQWJ4cUF0N3dDcUxnSmFMZ0ZzUDB1cVBnTTBCb0hVUG92UWdBb2ZSZG9Hc0Q5ZFRBTlFNSGI0TUlBWnRNUEFRQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBL0pjQTJEVEtNZ0MyalR1emJ5QWJSMW9Hd05heHhyZU9CWUR4emFOdnkyRDRGcERkdzNPMkh3T0c1V1lid01YeVhhQ3NBTVd2djlJQS9OSlpCbEI4QlNpL0JMeDZ3MVBBUzdkY3JRTXcvQnlnNENGUUFZRDdNcHhaQVN3L0JaaTlEZFJ3QzZnQndIVXgraGZCUEFGNEFKaTlDMUJ4QjZBQ2dEd0pHRndFenFlWEFRRGYzd1djeml3QWRtY0FnNHRBWGdDdUV3Q3MvaXhBeHY4eUErRDdrOEI4TlNVZy94Skl4UUtnQmNEazU0c2hBVEwrWGZsWFFLb0F5Q0pnUjRDbThWY0Q0SnNBQXdUTytZZUFhc1pmRHdCWkJlUlpvUDVKUUo3LzI0dWU4VmNFWUxyNnBXc3JmeUVnbDc4OC84OStBc0RQM3djTWVSS29kaUhJd3kvVC8vVTZBZURUWlVBbWdUb055Q0hKOEx0bDhhcE91UzRBMC9XeUNJSHp3MEF0Q2g2SDhwS0gvNzU0WGVPdkRZQk1BbjZSaFdBMThQTHlPSGRmdmNlaHRLNWJsc2xyTzkvcUFHUUM4eElINTlwdkNyNTg1N1p0M1RBdDZxNStwUUR5UW5DUGkwd0VRMWRGd3lBSHMwd1hyL0ZjcXdTd1BoUEtSREF2VlRUUFY2OXo5QlVEeU4zdnZvcnVkOFVuV1RNQUFnQUJnQUJBQUNBQUVBQUlBQVFBQWdBQmdBQkFBQ0FBRUFBSUFBUUFBZ0FCZ0FCQUFDQUFFQUFJQUFRQUFnQjlUUUMzVUVNQStKdkNPSVl3VjFISXh3S0FQeHY5VzB6UzJOZFFQcEkwalNNQWZuZjBRMHF4Nzl5eG1wenJwMndnQU9EL0wvdmpuR0llL0tmY3RvTFdBOWtkajkyWW9qNEMyZ0RJOFBjdUQvN3V1YXAyY2toSDF3c0JBUHh5OWs5akh2NzFsTldWSEpFYzE3RlBVd0RBcDVkL1ROM3hhVnZkNEw4YjJNa3NNS1VSQUorTWYrclhxMzlYYjVsQWx6UzlHdEFESUlSOCtWYzkvT3NzOFBUazBqd0M0SWZ4bjVLVHkzOVhmWGtTQ0hydUJSczk0MS8vNWY4K0NSeEhOUUlheHI4QUFVVUN0QURJNDc4elV4WXdCd0I4dVA5M2xzWi9GWkFBOEdIOE8xdmpud1U0SGU4RE5BQUlzVDlhQXlBQ09oVUNHaFVUZ0wzeHo0dEFyK0Uyb0dFQnNMMElsQWNRNXZGb0VzQnVxMkVSYUJSTUFNN2krR3Q1RW1qS1R3RDljV3NTZ0k3N3dJWUpvT2dVQUlBUWoyWUJiSTk5RE1ZQkdIMEUwUE1nMExBQ0ZGMER6TThBTjdzclFGNERub3V2QVUzcE93Q3p6d0JLbmdNYWJnRnMzd1EwM0FMWWZoZFVlZ2xJUitNQVN2OHdCQUNsM3dTWUJtRDFEMEVmQkpTK0N5d053UFJEZ0liSEFBQUFBQUFBQUFBQUFBQUFIZ041REFUQWYvMGl5RGdBWGdVYi8yc2dBSXovTVNqRS9ubkxQYUJkQU5QcnpmSk5BRDhJc2ZsdllSOVdnS2wwL0NpMEtBQitGSHFkVFA4OXNEY1B3UG8vaGdUclM4RDZITUF6Z0dFQWRtOERaUUs0eVJKb0hvRFpYNGJyK0VhSWlnOUVPSnNmaUZEeG5TZ2RYd216K0lrWWVRU0lmQ0hrL1YzQXp0NUhvaHdmaVRLOENLajVVS0NPSmNEY3p3TDBmQ3BVQ1lBNUdQdFU3SE92Wk44SUpkOEtIcU9sTjhMUGVkY0lQaFp0Vm9CYy8yckdYOCtHRVE4QkZqYU15RDhFVEd3WThhT0EyY1NXSVhuRGtER3haY3pQN2dUWFRZUHFmaUVnbC85VzFaWkJ5cmFOUzczYlBqMVh1eERrSGFOaytsZTFuN2l1alNObEdaQkpZTjAxdE1MUjN6M2x1MzlsZTRjcTJ6bzJqRWtJSE45MmpxMWw2Qjk3eCs2TzNVM1g1VDhwM0R4YTdnVHk3c0hyM3RIYk9qWVEzajUyajNaOTNrQmMyL2xXdUgzOE9NYTMzZU1mTzI5LzlmSUc4bDNlUHo2TStzNjJRZ0I1SVFneHBUVDJYUlgxdlJ4Tm5QUnRIYThXd0dwZ0RQT2NxaWpPK1dpVW5taXRBSEszSUNmdTZ4ZENVSHlTTlFNZ0FCQUFDQUFFQUFJQUFZQUFRQUFnQUJBQUNBQUVBQUlBQVlBQVFBQWdBQkFBQ0FBRUFBSUFBWUFBUUFBZ0FORFhCSEFOTlFTQXYybjl0OEE1VnREczVVZzhBUDZrOGZILzRXbnNheWdmU3BSakFzRHZYdnNoclYrSU9GU1RjL243RUpQR2VVRGZKMkx5OTBIeTREZTVUUVU5RHVUZ3VqRkZmUVMwQVJoZlUrL3k0Ry8yVlpVWkhGeXY3UnRoMmdDRU1ZMTUrUE1acXl3NUpEa3VJVER4bWJqUEwvK1laUGczOVkzK200R05FSmpTQ0lCUHhqLzE2OVcvcVRjaGNPaVNwZzhHNlFHUVB4VjhxSHY0MTFtZ2FWUjlMRmdOZ0RBbEo1Zi9wdnJ5Sk9Bam40di8yZmp2RFl4L0p0QWN4c2lHRVQ4Wi80MlJOQW5RQXNEUytIOFRFQUR3NGY3ZjFQaXZBcElId1BmeDcyeU5meGFnWStOUUZRQkNsT2QvWXdCRVFNZldzZThUZ0wzeHo0dEFQN043dU1rYkFGV0xRSGtBWVI0UEpnRnNOaG9XZ1lZSndQYVRRSEVBK1E1d1l4S0FqdnZBaGdtZzZCUUFBQjhQWmdGc0RuM3g5NEZOOFFtZ3N6citPaDRFR2xhQW9tdEF2QmtIY0xlN0F1UTFZRjk4RFNnTXdQQXpnSkxuZ0laYkFOczNBUTIzQUxiZkJSVUc0TlBCT0lDeDhGK0VBR0Q4VFVCWkFGYi9FUFNoMG5lQmhRSFlmZ2pROEJnQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQThDL2tJejhMNS84Q0FHQVhBUDhhRm0zL2F4Z0FyUDl6YU93TjN3THkzOEhTM2ZiL2h2WFJPQURybjRncGZmM3hrU2pqSzBCeEFMZko5UDhIZDlFNkFPc2ZpdlRXbDREOE5ualBDbUFZZ09tUFJkK21Hd0RXS1dEUEJHQVdnTjBOSTFUc0c2VmoxekNMVzhZb2VBbWtCVUIrRjdEWnN3RFluUUVNTGdKNUFWQ3hjNlNPSmNEY3p3SVVmQ0ZTRllBdys0T3RyV1Azdlk1OUk3WHNIVHhHUzIrRVpmeTd4T2JSWmdWb0duODFBTDRKMk50WS8zczE0NjhIZ0FpUVo0SDZKNEg5UnU3LzlJeS9JZ0NUOTZrN1ZQNUNZTDl2Tmk3TmVzWmZFNEQ4UHFEUGs4Qys0dUhQMDMvd0V3QStFVERuU1VCbWdYMk5vNytSNFhjcGpxcE91UzRBVXhpVEVIZ1kyTmZDNEhFb2Nrd0hkMCtqbndEd3kwbkFKMWtJRGpKWnlobDduTHV2M21ZOWxvUHJVcHBHYmVkYkhRQWhJTThEc2UvYzRYQllUOTJYVHc3azRQb3BSVC9xTzlzS0FlU0ZJTVNVMHRoM1ZkVDNjalJ4MGpiNUt3YXdHaGpIT1N1b29EajdVZWZvS3dhUXUyWUZGUlNDNHBPc0dRQUJnQUJBQUNBQUVBQUlBQVFBQWdBQmdBQkFBQ0FBRUFBSUFBUUFBZ0FCZ0FCQUFDQUFFQUFJQUFRQUFnQUJnQUJBQUNBQUVBQUlBQVFBQWdBQmdBQUFBQUlBQVlBQVFBQWdBQkFBQ0FBRUFBSUFBWUFBUUFBZ0FCQUFDQUFFQUFJQUFZQUFRQUFnQUJBQUNBQUVBQUlBQVlBQVFBQWdBQkFBQ0FBRUFBSUFBWUFBUUFBZ0FCQUFDQUFFQUFJQUFZQUFRQUFnQUJBQUNBQUVBQUlBQVlBQVFBQWdBQkFBQ0FBRUFBSUEvZXY5RDB3cVBCVjNCQ1BZQUFBQUFFbEZUa1N1UW1DQyIsInNpemVzIjoiNTEyeDUxMiIsInR5cGUiOiJpbWFnZS9wbmciLCJwdXJwb3NlIjoiYW55IG1hc2thYmxlIn1dfQ==">
 <style>
   :root{
     --bg:#1c1b22; --card:#2b2a32; --card2:#27262e; --line:#3a3942;
     --text:#e5e5e5; --dim:#7c7884;
     --accent:#757c58; --accent-bright:#a8b86a; --accent-hover:#bccf7a; --on-accent:#1c1b22;
+    --intern:#6a9fb5;
     --focus:#CE3F32; --break:#F4BA40; --rest:#2A62B6;
     --radius:12px; --radius-sm:8px; --t:.15s;
   }
@@ -34,6 +36,14 @@
   header{
     display:flex; align-items:center; gap:18px; padding:12px 18px;
     border-bottom:1px solid var(--line); flex:0 0 auto; flex-wrap:wrap; row-gap:8px;
+  }
+  /* Installed to an iOS home screen the status bar is translucent and the page runs under
+     the notch, so the header keeps clear of it. Zero in a normal browser tab. */
+  @supports (padding:env(safe-area-inset-top)){
+    header{padding-top:calc(12px + env(safe-area-inset-top));
+           padding-left:calc(18px + env(safe-area-inset-left));
+           padding-right:calc(18px + env(safe-area-inset-right))}
+    #rail,#timeline-wrap{padding-bottom:env(safe-area-inset-bottom)}
   }
   .brand{font-weight:600; letter-spacing:-.2px; font-size:15px}
   .datenav{display:flex; align-items:center; gap:6px}
@@ -58,6 +68,13 @@
   /* minmax(0,…) stops wide content from blowing the grid out and scrolling the page */
   main{flex:1 1 auto; display:grid; grid-template-columns:minmax(0,1fr) 340px; min-height:0}
   #timeline-wrap{overflow:auto; position:relative; padding:0 8px 40px 0}
+  /* Day type in the day view. It sits in the timeline's scroller as a sticky strip rather
+     than beside the date, which crowded the header and stretched the date field. */
+  #day-banner{position:sticky; top:0; z-index:7; display:flex; align-items:center; gap:8px;
+    margin:0 0 2px 0; padding:5px 10px; font-size:11.5px; color:var(--dim);
+    background:var(--card); border:1px solid var(--line); border-radius:var(--radius-sm)}
+  #day-banner[hidden]{display:none}
+  #day-banner .lbl{font-weight:600; color:var(--text)}
   @media (max-width:1040px){ main{grid-template-columns:minmax(0,1fr) 280px} }
   #timeline{position:relative; margin:14px 0 0 56px}
   .hourline{position:absolute; left:-50px; right:0; border-top:1px solid var(--line)}
@@ -139,6 +156,38 @@
   .sub-h{font-size:11px; letter-spacing:.09em; text-transform:uppercase; color:var(--dim); margin:16px 0 8px}
   .modal.wide{width:min(820px,95vw)}
   .ptable{display:grid; grid-template-columns:52px 92px minmax(140px,1fr) 124px 108px 58px 26px; gap:7px; align-items:center}
+  /* ---- month view ---- */
+  #monthview{padding:14px 14px 40px 14px}
+  .mo-head{display:grid; grid-template-columns:repeat(7,minmax(0,1fr)); gap:6px; margin-bottom:6px}
+  .mo-head>div{font-size:10px; letter-spacing:.08em; text-transform:uppercase; color:var(--dim); font-weight:600; text-align:center}
+  .mo-grid{display:grid; grid-template-columns:repeat(7,minmax(0,1fr)); gap:6px}
+  .mo-cell{background:var(--card2); border:1px solid var(--line); border-radius:var(--radius-sm);
+    padding:6px 7px; min-height:72px; display:flex; flex-direction:column; gap:3px; cursor:pointer}
+  .mo-cell:hover{background:var(--hover-soft); border-color:var(--accent)}
+  .mo-cell.out{opacity:.35}
+  .mo-cell.we{background:transparent}
+  .mo-cell.today{border-color:var(--accent-bright); box-shadow:inset 0 0 0 1px var(--accent-bright)}
+  .mo-top{display:flex; align-items:center; justify-content:space-between; gap:4px}
+  .mo-date{font-size:12px; font-weight:600}
+  .mo-cell.today .mo-date{color:var(--accent-bright)}
+  /* Day-type chip — one component, shown in the month grid, the week strip and the day header. */
+  .dt-badge{display:inline-block; font-size:9px; font-weight:700; padding:1px 4px; border-radius:3px;
+    letter-spacing:.04em; background:var(--accent-soft); color:var(--accent-bright); white-space:nowrap; vertical-align:1px}
+  .dt-badge.vacation{background:rgba(244,186,64,.18); color:var(--break)}
+  .dt-badge.sick{background:rgba(206,63,50,.18); color:var(--focus)}
+  .dt-badge.lg{font-size:10.5px; padding:2px 7px; border-radius:var(--radius-pill); letter-spacing:.02em}
+  .mo-h{font-size:12.5px; font-variant-numeric:tabular-nums}
+  .mo-split{height:3px; border-radius:2px; overflow:hidden; display:flex; background:var(--line)}
+  .mo-split>i{display:block; height:100%}
+  .mo-flags{margin-top:auto; display:flex; gap:3px; flex-wrap:wrap}
+  @media (max-width:820px){
+    #monthview{padding:10px 10px 32px 10px}
+    .mo-cell{min-height:58px; padding:4px 5px}
+    .mo-h{font-size:11px}
+  }
+  .firstrun{margin-top:12px; padding-top:12px; border-top:1px solid var(--line); font-size:12px; color:var(--dim)}
+  .sep-prev{font-variant-numeric:tabular-nums}
+  .sep-prev b{color:var(--accent-bright); font-weight:600}
   .colcell{display:flex; align-items:center; gap:1px; min-width:0}
   .colcell input[type=color]{flex:1; min-width:0}
   .colcell input.inh{border-style:dashed !important; opacity:.85}
@@ -177,6 +226,9 @@
   .splitleg span{display:flex; align-items:center; gap:5px}
   .splitleg i{width:9px; height:9px; border-radius:2px; display:inline-block}
   .wk-dh.we .wk-dn,.wk-dh.we .wk-dt{opacity:.62}
+  /* Constant-height slot: a badge on one day must not shift the other six columns. */
+  .wk-badge{height:14px; margin-top:2px; line-height:14px}
+  .wk-dh.off .wk-dn,.wk-dh.off .wk-dt{opacity:.62}
   .wk-col:hover{background:var(--hover-soft)}
   .wk-gut{position:relative}
   .wk-hl{position:absolute; right:4px; transform:translateY(-6px); font-size:10px; color:var(--dim); font-variant-numeric:tabular-nums}
@@ -292,7 +344,7 @@
     <button class="btn" id="today-btn">today</button>
   </div>
   <div class="seg" id="viewseg">
-    <button data-v="day" id="v-day">Day</button><button data-v="week" id="v-week">Week</button>
+    <button data-v="day" id="v-day">Day</button><button data-v="week" id="v-week">Week</button><button data-v="month" id="v-month">Month</button>
   </div>
   <div class="toolbar">
     <button class="btn outline" id="proj-btn">Übertragen</button>
@@ -306,8 +358,10 @@
 </header>
 <main>
   <div id="timeline-wrap">
+    <div id="day-banner" hidden></div>
     <div id="timeline"></div>
     <div id="weekview" hidden></div>
+    <div id="monthview" hidden></div>
   </div>
   <div id="rail">
     <div class="card" id="now-card"></div>
@@ -361,9 +415,25 @@ const I18N={
     snapLive:'Snap live tracking to the grid',
     snapLiveHint:'Start, Switch, Break and Stop round to the grid above. When rounding would swallow a block, the exact time is kept.',
     mergeRows:'Merge consecutive blocks', mergeRowsHint:'One export row per run of same-position blocks instead of one per block.',
-    descSep:'Description separator', descSepHint:'Placed between the descriptions of merged blocks.',
+    descSep:'Description separator', descSepHint:'Placed between merged descriptions. A trailing period is dropped from every part but the last.',
+    descSepPreview:(sep,ex)=>`Separator: <b>${sep}</b> → ${ex}`,
     dataNote:'Everything lives in this browser. Back up regularly — clearing browsing data will erase it.',
     exportBackup:'Export backup (.json)', importBackup:'Import backup',
+    firstRunHint:'Nothing tracked here yet. An installed app has its own storage — if your days live in the browser, restore them from a JSON backup.',
+    dayTypeLabel:'Day type', dtWork:'Working day', dtWeekend:'Weekend',
+    dt_holiday:'Public holiday', dt_vacation:'Vacation', dt_sick:'Sick',
+    dtShort_holiday:'PH', dtShort_vacation:'VAC', dtShort_sick:'SL',
+    dayTypeBanner:'No target on this day.',
+    targetReduced:n=>`Target reduced by ${n} day${n>1?'s':''} off.`,
+    viewMonth:'Month', month:'Month', monthTotal:'Month total',
+    scToggleView3:'Cycle day / week / month view',
+    leaveTally:'Days off', noDataMonth:'Nothing tracked this month.',
+    perWeek:'Per week', completeness:'Completeness',
+    missingDays:n=>`${n} working day${n>1?'s':''} with nothing tracked`,
+    monthUnlabeled:n=>`${n} block${n>1?'s':''} without a position`,
+    breakViol:n=>`${n} day${n>1?'s':''} breaching the break rule`,
+    allComplete:'Every working day tracked, nothing open.',
+    expectedDays:(e,w)=>`${e} of ${w} weekdays expected`,
     stillRunning:'Still running?', staleText:(when,hrs)=>`A block has been running since <b>${when}</b> (${hrs}h). The app was probably closed or asleep.`,
     endItAt:'End it at', keepRunning:'Keep running', stopIt:'Stop it',
     tMerged:l=>`Merged → kept “${l}”`, tTooSmall:'Too small to split here', tMoveMarker:'Move the marker over a block first',
@@ -416,7 +486,7 @@ const I18N={
     shortcuts:'Keyboard shortcuts', scGeneral:'General', scMarker:'Marker & cutting',
     scBlock:'Selected block', scExport:'Export dialog', scHintOpen:'Press ? for shortcuts',
     scToggleView:'Switch day / week view', scHelp:'Show this help', scEsc:'Close / deselect',
-    scPrevNext:'Previous / next day (week)', scToday:'Jump to today',
+    scPrevNext:'Previous / next day (week, month)', scToday:'Jump to today',
     scMove:'Move marker', scSplit:'Split block at marker', scMerge:'Merge with neighbour',
     scDelete:'Delete block', scCopyCell:'Copy cell and advance', scNavCell:'Previous / next cell',
     theme:'Theme', themeBg:'Background', themeText:'Text', themeAccent:'Accent', themeReset:'Reset'
@@ -443,9 +513,25 @@ const I18N={
     snapLive:'Live-Erfassung aufs Raster runden',
     snapLiveHint:'Start, Wechsel, Pause und Stopp rasten auf das Raster oben ein. Würde das Runden einen Block verschlucken, bleibt die genaue Zeit stehen.',
     mergeRows:'Aufeinanderfolgende Blöcke zusammenfassen', mergeRowsHint:'Eine Exportzeile je Folge gleicher Positionen statt je Block.',
-    descSep:'Trennzeichen für Beschreibungen', descSepHint:'Steht zwischen den Beschreibungen zusammengefasster Blöcke.',
+    descSep:'Trennzeichen für Beschreibungen', descSepHint:'Steht zwischen zusammengefassten Beschreibungen. Bei allen Teilen außer dem letzten entfällt der Schlusspunkt.',
+    descSepPreview:(sep,ex)=>`Trennzeichen: <b>${sep}</b> → ${ex}`,
     dataNote:'Alle Daten liegen in diesem Browser. Sichere regelmäßig — beim Löschen der Browserdaten gehen sie verloren.',
     exportBackup:'Sicherung exportieren (.json)', importBackup:'Sicherung importieren',
+    firstRunHint:'Hier ist noch nichts erfasst. Eine installierte App hat einen eigenen Speicher — liegen deine Tage im Browser, hol sie über ein JSON-Backup zurück.',
+    dayTypeLabel:'Tagestyp', dtWork:'Arbeitstag', dtWeekend:'Wochenende',
+    dt_holiday:'Feiertag', dt_vacation:'Urlaub', dt_sick:'Krank',
+    dtShort_holiday:'FT', dtShort_vacation:'U', dtShort_sick:'K',
+    dayTypeBanner:'Kein Soll an diesem Tag.',
+    targetReduced:n=>`Soll um ${n} freie${n>1?' Tage':'n Tag'} reduziert.`,
+    viewMonth:'Monat', month:'Monat', monthTotal:'Monatssumme',
+    scToggleView3:'Tages-/Wochen-/Monatsansicht wechseln',
+    leaveTally:'Freie Tage', noDataMonth:'Diesen Monat nichts erfasst.',
+    perWeek:'Pro Woche', completeness:'Vollständigkeit',
+    missingDays:n=>`${n} Arbeitstag${n>1?'e':''} ohne Erfassung`,
+    monthUnlabeled:n=>`${n} ${n>1?'Blöcke':'Block'} ohne Position`,
+    breakViol:n=>`${n} Tag${n>1?'e':''} mit Pausenverstoß`,
+    allComplete:'Alle Arbeitstage erfasst, nichts offen.',
+    expectedDays:(e,w)=>`${e} von ${w} Wochentagen erwartet`,
     stillRunning:'Läuft noch?', staleText:(when,hrs)=>`Ein Block läuft seit <b>${when}</b> (${hrs} h). Die App war wohl geschlossen oder im Ruhezustand.`,
     endItAt:'Beenden um', keepRunning:'Weiterlaufen lassen', stopIt:'Beenden',
     tMerged:l=>`Verbunden → „${l}“ behalten`, tTooSmall:'Zu klein zum Teilen', tMoveMarker:'Erst den Marker über einen Block bewegen',
@@ -498,7 +584,7 @@ const I18N={
     shortcuts:'Tastaturkürzel', scGeneral:'Allgemein', scMarker:'Marker & Schneiden',
     scBlock:'Ausgewählter Block', scExport:'Export-Dialog', scHintOpen:'? für Tastaturkürzel',
     scToggleView:'Tages-/Wochenansicht wechseln', scHelp:'Diese Hilfe anzeigen', scEsc:'Schließen / Auswahl aufheben',
-    scPrevNext:'Vorheriger / nächster Tag (Woche)', scToday:'Zu heute springen',
+    scPrevNext:'Vorheriger / nächster Tag (Woche, Monat)', scToday:'Zu heute springen',
     scMove:'Marker bewegen', scSplit:'Block am Marker teilen', scMerge:'Mit Nachbarn verbinden',
     scDelete:'Block löschen', scCopyCell:'Zelle kopieren und weiter', scNavCell:'Vorherige / nächste Zelle',
     theme:'Farbschema', themeBg:'Hintergrund', themeText:'Text', themeAccent:'Akzent', themeReset:'Zurücksetzen'
@@ -515,6 +601,23 @@ function rgba(h,a){ const [r,g,b]=toRgb(h); return `rgba(${r},${g},${b},${a})`; 
 function lum(h){ const [r,g,b]=toRgb(h).map(v=>{ v/=255; return v<=0.03928?v/12.92:Math.pow((v+0.055)/1.055,2.4); });
   return 0.2126*r+0.7152*g+0.0722*b; }
 function contrast(a,b){ const l1=lum(a),l2=lum(b),hi=Math.max(l1,l2),lo=Math.min(l1,l2); return (hi+0.05)/(lo+0.05); }
+function toHsl(h){
+  const [r,g,b]=toRgb(h).map(v=>v/255);
+  const mx=Math.max(r,g,b), mn=Math.min(r,g,b), d=mx-mn, l=(mx+mn)/2;
+  let hu=0, sa=0;
+  if(d){
+    sa=d/(1-Math.abs(2*l-1));
+    hu = mx===r ? ((g-b)/d+(g<b?6:0)) : mx===g ? ((b-r)/d+2) : ((r-g)/d+4);
+    hu*=60;
+  }
+  return [hu,sa,l];
+}
+function fromHsl(hu,sa,l){
+  hu=((hu%360)+360)%360; sa=Math.max(0,Math.min(1,sa)); l=Math.max(0,Math.min(1,l));
+  const c=(1-Math.abs(2*l-1))*sa, x=c*(1-Math.abs((hu/60)%2-1)), m=l-c/2;
+  const seg=[[c,x,0],[x,c,0],[0,c,x],[0,x,c],[x,0,c],[c,0,x]][Math.floor(hu/60)%6];
+  return toHex(seg.map(v=>(v+m)*255));
+}
 
 const THEME_DEFAULT={bg:'#1c1b22',text:'#e5e5e5',accent:'#757c58'};
 const THEME_PRESETS=[
@@ -547,6 +650,19 @@ function applyTheme(){
   r.setProperty('--accent-soft',  rgba(accent,0.22));
   r.setProperty('--accent-ghost', rgba(bright,0.16));
   r.setProperty('--hover-soft',   rgba(text,0.035));
+  // Factura vs Intern used to be accent-bright vs --dim. On a light ground both collapse
+  // toward the same mid-grey, making the split bar unreadable. Intern is now derived from
+  // the accent by rotating the hue far away and holding a fixed saturation, so the pair
+  // stays distinguishable whatever accent is tuned in — including a blue one.
+  // Hue alone separates them for normal vision but not for a colour vision deficiency, so
+  // the lightness is pushed apart as well — away from the background, where there is room.
+  const [hu,,lf]=toHsl(bright);
+  const light=lum(bg)>0.5;
+  const intern=fromHsl(hu+150, 0.32, Math.max(0.16,Math.min(0.84, lf+(light?-0.17:0.17))));
+  r.setProperty('--intern',intern);
+  // Standalone windows tint their chrome from this; keep it on the actual background.
+  const tc=document.querySelector('meta[name="theme-color"]');
+  if(tc) tc.setAttribute('content',bg);
 }
 
 function defaults(){
@@ -557,7 +673,7 @@ function defaults(){
       dateFmt:'dd.mm.yyyy', durFmt:'hm', weekTargetHours:40,
       snapLive:true,        // live start/switch/break/stop land on the grid, like every other edit
       mergeRows:true,       // collapse consecutive same-position blocks into one export row
-      descSep:';'},         // ...and join their descriptions with this
+      descSep:'; '},        // ...and join their descriptions with this
     positions:[
       // Two levels: top-level entries are projects (containers); their children are the
       // bookable work packages. `billable` is inherited when null.
@@ -571,7 +687,8 @@ function defaults(){
       {id:'pbeta', code:'PRJ-B', label:'Project Beta',  color:'#4fa3a1', archived:false, parentId:null,   billable:true},
       {id:'pb_int',code:'PRJ-B-INT',  label:'Integration', color:null,   archived:false, parentId:'pbeta',  billable:null, hotkey:4}
     ],
-    blocks:[]
+    blocks:[],
+    dayTypes:{}          // ISO date → 'holiday' | 'vacation' | 'sick'; absent = working day
   };
 }
 const LEGACY_KEY='projectile-buddy-v1';   // pre-rename store; migrate once, never drop data
@@ -587,6 +704,10 @@ function load(){
   catch(e){ state=defaults(); }
   if(!state.positions.some(p=>p.id==='pause')) state.positions.unshift(defaults().positions[0]);
   state.settings=Object.assign({},defaults().settings,state.settings||{});
+  if(!state.dayTypes||typeof state.dayTypes!=='object') state.dayTypes={};
+  // The separator shipped as ';' before descriptions learned to drop their trailing period;
+  // with that in place the intended form is '; '. Only the untouched old default is moved.
+  if(state.settings.descSep===';') state.settings.descSep='; ';
   lang=S().lang||'de';
   if(migratePositions()|ensureHotkeys()) save();
 }
@@ -653,6 +774,37 @@ function isoWeekNo(d){
 }
 function blocksOfDay(dayMs){
   return state.blocks.filter(b=>b.start>=dayMs&&b.start<dayMs+DAY).sort((a,b)=>a.start-b.start);
+}
+
+/* --- day types ---
+   A target is a claim about days you were *supposed* to work, so the app needs to know which
+   days those aren't. A marked day contributes nothing to the target; blocks tracked on it
+   still count as worked, so an hour booked on a holiday reads as overtime, not as a hole. --- */
+const DAY_TYPES=['holiday','vacation','sick'];
+function isoDate(ms){ const d=new Date(ms); return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`; }
+function dayType(ms){ const v=(state.dayTypes||{})[isoDate(ms)]; return DAY_TYPES.includes(v)?v:null; }
+function setDayType(ms,v){
+  state.dayTypes=state.dayTypes||{};
+  if(v&&DAY_TYPES.includes(v)) state.dayTypes[isoDate(ms)]=v;
+  else delete state.dayTypes[isoDate(ms)];
+  save();
+}
+// Short chip for grids and strips; `full` spells the type out where there is room for it.
+function dtBadge(type,full){
+  if(!type) return '';
+  return `<span class="dt-badge ${type}${full?' lg':''}" title="${esc(t('dt_'+type))}">${
+    full?esc(t('dt_'+type)):t('dtShort_'+type)}</span>`;
+}
+function isWeekday(ms){ const wd=new Date(ms).getDay(); return wd>=1&&wd<=5; }
+// A day is expected only when it is a weekday and not marked off.
+function isExpected(ms){ return isWeekday(ms)&&!dayType(ms); }
+function dayTargetMs(ms){ return isExpected(ms) ? (S().targetHours||0)*3600000 : 0; }
+// The weekly target is the contract figure, scaled by how much of the week is still expected.
+function weekTargetMs(ws){
+  const full=(S().weekTargetHours||0)*3600000;
+  let expected=0, weekdays=0;
+  for(let i=0;i<7;i++){ const dm=addDays(ws,i).getTime(); if(isWeekday(dm)){ weekdays++; if(isExpected(dm)) expected++; } }
+  return weekdays ? full*expected/weekdays : 0;
 }
 function dayBlocks(){ return blocksOfDay(dayStartMs()); }
 function runningBlock(){ return state.blocks.find(b=>b.end==null); }
@@ -737,10 +889,17 @@ function ensureHotkeys(){
 /* ============================ rendering ============================ */
 function render(){
   renderHeader();
-  const wk=viewMode==='week';
-  el('timeline').hidden=wk; el('weekview').hidden=!wk;
+  const wk=viewMode==='week', mo=viewMode==='month';
+  el('timeline').hidden=wk||mo; el('weekview').hidden=!wk; el('monthview').hidden=!mo;
   if(wk){ renderWeek(); }
-  else { renderTimeline(); renderNow(); renderEditor(); renderTotals(); }
+  else if(mo){ renderMonth(); }
+  else { renderDayBanner(); renderTimeline(); renderNow(); renderEditor(); renderTotals(); }
+  if(wk||mo) el('day-banner').hidden=true;
+}
+function renderDayBanner(){
+  const b=el('day-banner'), ty=dayType(dayStartMs());
+  b.hidden=!ty;
+  if(ty) b.innerHTML=`${dtBadge(ty,true)}<span class="lbl">${t('dayTypeBanner')}</span>`;
 }
 
 function renderHeader(){
@@ -750,12 +909,15 @@ function renderHeader(){
     const ws=startOfWeek(d), we=addDays(ws,6);
     const f=x=>`${pad(x.getDate())}.${pad(x.getMonth()+1)}.`;
     el('date-label').textContent=`${t('week')} ${isoWeekNo(ws)} · ${f(ws)}–${f(we)}`;
+  } else if(viewMode==='month'){
+    el('date-label').textContent=d.toLocaleDateString(loc(),{month:'long',year:'numeric'});
   } else {
     el('date-label').textContent=d.toLocaleDateString(loc(),{weekday:'short',day:'2-digit',month:'short'});
   }
-  el('v-day').textContent=t('viewDay'); el('v-week').textContent=t('viewWeek');
+  el('v-day').textContent=t('viewDay'); el('v-week').textContent=t('viewWeek'); el('v-month').textContent=t('viewMonth');
   el('v-day').classList.toggle('on',viewMode==='day');
   el('v-week').classList.toggle('on',viewMode==='week');
+  el('v-month').classList.toggle('on',viewMode==='month');
   el('today-btn').textContent=t('today');
   el('pos-btn').textContent=t('positions');
   el('data-btn').textContent=t('btnSettings');
@@ -875,11 +1037,22 @@ function renderNow(){
     el('btn-stop').onclick=()=>stopDay();
     el('now-help').onclick=e=>{ e.preventDefault(); openShortcuts(); };
   } else {
+    // An installed home-screen app gets its own storage bucket, so on iOS it starts with an
+    // empty store even though the same URL in Safari is full of days. Offer the way back in.
+    const fresh=!state.blocks.length;
     c.innerHTML=`<h3>${t('now')}</h3><p class="dim" style="margin:0 0 12px">${t('notTracking')}</p>
       <button class="btn primary" id="btn-start" style="width:100%" title="${t('startHint')}">${t('startDay')}</button>
-      <div class="hint" style="margin-top:8px">${t('startHint')} <a href="#" id="now-help" style="color:var(--accent-bright)">${t('help')}</a></div>`;
+      <div class="hint" style="margin-top:8px">${t('startHint')} <a href="#" id="now-help" style="color:var(--accent-bright)">${t('help')}</a></div>
+      ${fresh?`<div class="firstrun">
+        <p style="margin:0 0 8px">${t('firstRunHint')}</p>
+        <button class="btn outline" id="fr-imp" style="width:100%">${t('importBackup')}</button>
+      </div>`:''}`;
     el('btn-start').onclick=()=>startDay();
     el('now-help').onclick=e=>{ e.preventDefault(); openShortcuts(); };
+    const fr=el('fr-imp');
+    if(fr) fr.onclick=()=>importFile(data=>{ if(data&&data.blocks&&data.positions){ state=data;
+      if(!state.dayTypes) state.dayTypes={};
+      lang=S().lang||lang; save(); render(); toast(t('tBackupRestored')); } else toast(t('tNotBackup')); });
   }
 }
 
@@ -982,13 +1155,19 @@ function renderTotals(){
     compl=`<div class="compl ok">${t('breakOk')}</div>`;
   }
 
-  const target=S().targetHours;
+  const dm=dayStartMs(), dt=dayType(dm), target=dayTargetMs(dm)/3600000;
   c.innerHTML=`<h3>${t('totals')}</h3>${rows||`<p class="dim" style="margin:0">${t('noBlocks')}</p>`}
     ${billSplitHtml(blocks)}
     <div class="ttot"><span>${t('work')}</span><span class="tabnum">${fmtDur(work)} / ${fmtHours(target)}</span></div>
     <div class="tline"><span class="dim">${t('breakRow')}</span><span class="tabnum dim">${fmtDur(pause)}</span></div>
+    <div class="field" style="margin:10px 0 0"><label>${t('dayTypeLabel')}</label>
+      <select id="ed-daytype">
+        <option value=""${dt?'':' selected'}>${isWeekday(dm)?t('dtWork'):t('dtWeekend')}</option>
+        ${DAY_TYPES.map(v=>`<option value="${v}"${dt===v?' selected':''}>${t('dt_'+v)}</option>`).join('')}
+      </select></div>
     ${unlabeled?`<div class="compl warn">${t('unlabeledWarn',unlabeled)}</div>`:''}
     ${compl}`;
+  el('ed-daytype').onchange=e=>{ setDayType(dm,e.target.value||null); render(); };
 }
 
 // Factura vs Internal — the orthogonal axis, shown as one glanceable bar.
@@ -998,11 +1177,11 @@ function billSplitHtml(blocks){
   const pf=Math.round(sp.fact/work*100);
   return `<div class="split">
       <i style="width:${sp.fact/work*100}%;background:var(--accent-bright)"></i>
-      <i style="width:${sp.intern/work*100}%;background:var(--dim)"></i>
+      <i style="width:${sp.intern/work*100}%;background:var(--intern)"></i>
     </div>
     <div class="splitleg">
       <span><i style="background:var(--accent-bright)"></i>${t('factura')} <b class="tabnum">${fmtDur(sp.fact)}</b> <span class="dim">${pf}%</span></span>
-      <span><i style="background:var(--dim)"></i>${t('internal')} <b class="tabnum">${fmtDur(sp.intern)}</b> <span class="dim">${100-pf}%</span></span>
+      <span><i style="background:var(--intern)"></i>${t('internal')} <b class="tabnum">${fmtDur(sp.intern)}</b> <span class="dim">${100-pf}%</span></span>
     </div>`;
 }
 /* --- description recall ---
@@ -1250,8 +1429,14 @@ function startDraw(e){
 }
 
 /* ============================ navigation & toolbar ============================ */
-el('prev').onclick=()=>{ selectedDate=addDays(selectedDate,viewMode==='week'?-7:-1); selectedId=null; render(); };
-el('next').onclick=()=>{ selectedDate=addDays(selectedDate,viewMode==='week'?7:1); selectedId=null; render(); };
+el('prev').onclick=()=>{ selectedDate=stepDate(-1); selectedId=null; render(); };
+el('next').onclick=()=>{ selectedDate=stepDate(1); selectedId=null; render(); };
+// One step means one unit of whatever is on screen.
+function stepDate(dir){
+  if(viewMode==='week') return addDays(selectedDate,dir*7);
+  if(viewMode==='month'){ const x=new Date(selectedDate); x.setDate(1); x.setMonth(x.getMonth()+dir); x.setHours(0,0,0,0); return x; }
+  return addDays(selectedDate,dir);
+}
 el('viewseg').onclick=e=>{ const b=e.target.closest('[data-v]'); if(!b)return; viewMode=b.dataset.v; selectedId=null; render(); };
 el('today-btn').onclick=()=>{ selectedDate=new Date(todayMid()); selectedId=null; render(); };
 el('pos-btn').onclick=openPositions;
@@ -1276,7 +1461,7 @@ document.addEventListener('keydown',e=>{
   }
   const k=e.key.toLowerCase();
   if(e.key==='?'){ e.preventDefault(); openShortcuts(); return; }
-  if(k==='w'){ viewMode=viewMode==='week'?'day':'week'; selectedId=null; render(); return; }
+  if(k==='w'){ const order=['day','week','month']; viewMode=order[(order.indexOf(viewMode)+1)%3]; selectedId=null; render(); return; }
   if(k==='t'){ selectedDate=new Date(todayMid()); selectedId=null; render(); return; }
   if(e.key==='ArrowLeft'){ e.preventDefault(); el('prev').click(); return; }
   if(e.key==='ArrowRight'){ e.preventDefault(); el('next').click(); return; }
@@ -1477,8 +1662,9 @@ function openData(){
       <div class="field"><label class="chk"><input type="checkbox" id="set-merge" ${S().mergeRows!==false?'checked':''}> ${t('mergeRows')}</label>
         <p class="hint" style="margin:4px 0 0">${t('mergeRowsHint')}</p></div>
       <div class="field"><label>${t('descSep')}</label>
-        <input type="text" id="set-sep" maxlength="8" value="${esc(descSep())}" placeholder=";">
-        <p class="hint" style="margin:4px 0 0">${t('descSepHint')}</p></div>
+        <input type="text" id="set-sep" maxlength="8" value="${esc(descSep())}" placeholder="; ">
+        <p class="hint" style="margin:4px 0 0">${t('descSepHint')}</p>
+        <p class="hint sep-prev" id="sep-prev"></p></div>
     </div>
     <div class="field"><label>${t('columns')}</label>
       <div style="display:flex;flex-wrap:wrap;gap:10px;margin-top:4px">
@@ -1499,7 +1685,10 @@ function openData(){
     S().targetHours=v; e.target.value=fmtHours(v); save(); renderTotals(); };
   el('set-snaplive').onchange=e=>{ S().snapLive=e.target.checked; save(); };
   el('set-merge').onchange=e=>{ S().mergeRows=e.target.checked; save(); };
-  el('set-sep').onchange=e=>{ S().descSep=e.target.value; save(); };
+  const sepPrev=()=>{ const n=el('sep-prev'); if(n) n.innerHTML=t('descSepPreview',esc(showWs(descSep())),esc(joinDescs(['Parser gefixt.','PR 214 geprüft.']))); };
+  el('set-sep').oninput=e=>{ S().descSep=e.target.value; sepPrev(); };
+  el('set-sep').onchange=e=>{ S().descSep=e.target.value; save(); sepPrev(); };
+  sepPrev();
   const setTheme=patch=>{ S().theme=Object.assign({},THEME_DEFAULT,S().theme||{},patch); save(); applyTheme(); };
   ['bg','text','accent'].forEach(k=>{
     const inp=el('th-'+k); if(!inp) return;
@@ -1619,7 +1808,7 @@ function pickQuickPick(id){
 function shortcutGroups(){
   return [
     [t('scGeneral'), [
-      [t('scToggleView'), ['W']],
+      [t('scToggleView3'), ['W']],
       [t('scPrevNext'),   ['←','→']],
       [t('scToday'),      ['T']],
       [t('scHelp'),       ['?']],
@@ -1696,12 +1885,14 @@ function renderWeek(){
   if(maxM<=minM) maxM=minM+60;
   const H=(maxM-minM)*WPPM, todayMs=todayMid();
   const names=t('dayNames');
-  let head=`<div class="wk-head"><div></div>`+st.days.map((d,i)=>
-    `<div class="wk-dh${d.ms===todayMs?' today':''}${[0,6].includes(d.date.getDay())?' we':''}" data-day="${d.ms}">
+  let head=`<div class="wk-head"><div></div>`+st.days.map((d,i)=>{
+    const ty=dayType(d.ms);
+    return `<div class="wk-dh${d.ms===todayMs?' today':''}${[0,6].includes(d.date.getDay())?' we':''}${ty?' off':''}" data-day="${d.ms}">
        <div class="wk-dn">${names[i]}</div>
        <div class="wk-dt">${pad(d.date.getDate())}.${pad(d.date.getMonth()+1)}.</div>
        <div class="wk-dt" style="margin-top:2px">${d.work?fmtDur(d.work):'–'}</div>
-     </div>`).join('')+`</div>`;
+       <div class="wk-badge">${dtBadge(ty)}</div>
+     </div>`;}).join('')+`</div>`;
   let gut=`<div class="wk-gut">`;
   for(let hr=Math.ceil(minM/60); hr<=Math.floor(maxM/60); hr++)
     gut+=`<div class="wk-hl" style="top:${(hr*60-minM)*WPPM}px">${pad(hr)}:00</div>`;
@@ -1728,48 +1919,32 @@ function renderWeek(){
 function renderWeekRail(ws,st){
   const we=addDays(ws,6);
   const fmtD=d=>`${pad(d.getDate())}.${pad(d.getMonth()+1)}.`;
-  const target=(S().weekTargetHours||40)*3600000;
+  const target=weekTargetMs(ws);                       // reduced by holidays / leave in this week
+  const off=st.days.filter(d=>dayType(d.ms)).length;
   const diff=st.work-target, over=diff>=0;
   // summary
   el('now-card').innerHTML=`<h3>${t('week')} ${isoWeekNo(ws)}</h3>
     <div class="dim tabnum" style="margin-bottom:8px">${t('wkRange',fmtD(ws),fmtD(we))}</div>
     <div class="elapsed tabnum">${fmtDur(st.work)}</div>
-    <div class="dim tabnum">${t('weekTotal')} / ${fmtHours(S().weekTargetHours||40)} ·
+    <div class="dim tabnum">${t('weekTotal')} / ${fmtDur(target)} ·
       ${over?t('over'):t('under')} ${fmtDur(Math.abs(diff))}</div>
+    ${off?`<div class="dim" style="font-size:11.5px;margin-top:2px">${t('targetReduced',off)}</div>`:''}
     <div class="bar" style="margin-top:10px"><i style="width:${Math.min(100,target?st.work/target*100:0)}%;background:var(--accent-bright)"></i></div>
     <div class="tline" style="margin-top:10px"><span class="dim">${t('breakRow')}</span><span class="tabnum dim">${fmtDur(st.pause)}</span></div>
     ${billSplitHtml(st.days.flatMap(d=>blocksOfDay(d.ms)))}
     ${st.unlabeledCount?`<div class="compl warn">${t('weekUnlabeled',st.unlabeledCount)}</div>`:''}`;
-  // by position
-  // roll work packages up into their project, listing the packages beneath
-  const groups={};
-  Object.entries(st.per).filter(([k])=>k!=='__un'&&k!==PAUSE()).forEach(([k,v])=>{
-    const p=posById(k); if(!p) return;
-    const r=rootOf(p);
-    const g=groups[r.id]=groups[r.id]||{pos:r,total:0,kids:[]};
-    g.total+=v;
-    if(r.id!==p.id) g.kids.push([p,v]);
-  });
-  const rows=Object.values(groups).sort((a,b)=>b.total-a.total);
-  const totalWork=st.work||1;
+  // by position — work packages rolled up into their project
   el('editor-card').hidden=false;
-  el('editor-card').innerHTML=`<h3>${t('byPosition')}</h3>`+(rows.length?rows.map(g=>{
-    const pctv=Math.round(g.total/totalWork*100);
-    const kids=g.kids.sort((a,b)=>b[1]-a[1]).map(([p,v])=>
-      `<div class="stat-top" style="font-size:11.5px;color:var(--dim);padding-left:12px">
-         <span>${esc(p.label)}</span><span class="tabnum">${fmtDur(v)}</span></div>`).join('');
-    return `<div class="stat">
-      <div class="stat-top"><span>${esc(g.pos.label)}<span class="pct">${pctv}%</span></span><span class="tabnum">${fmtDur(g.total)}</span></div>
-      <div class="bar"><i style="width:${g.total/totalWork*100}%;background:${posColor(g.pos)}"></i></div>
-      ${kids}
-    </div>`;
-  }).join(''):`<p class="dim" style="margin:0">${t('noDataWeek')}</p>`);
+  el('editor-card').innerHTML=`<h3>${t('byPosition')}</h3>`+positionBreakdownHtml(st.per,st.work,t('noDataWeek'));
   // per day
   const maxDay=Math.max(...st.days.map(d=>d.work+d.pause),1);
   const names=t('dayNames');
   el('totals-card').innerHTML=`<h3>${t('perDay')}</h3>`+st.days.map((d,i)=>{
     const tot=d.work+d.pause;
-    return `<div class="dayrow${tot?'':' zero'}">
+    // The tooltip carries the exact figures for a mouse; the legend below carries the
+    // meaning of the two colours for everything else, touch included.
+    const tip=`${names[i]} — ${t('work')} ${fmtDur(d.work)} · ${t('breakRow')} ${fmtDur(d.pause)}`;
+    return `<div class="dayrow${tot?'':' zero'}" title="${esc(tip)}">
       <span class="dim">${names[i]}</span>
       <span class="dbar">
         <i style="width:${d.work/maxDay*100}%;background:var(--accent-bright)"></i>
@@ -1777,7 +1952,142 @@ function renderWeekRail(ws,st){
       </span>
       <span class="tabnum">${d.work?fmtDur(d.work):'–'}${d.compl.viol?`<span class="flag warn">${t('complWarnShort')}</span>`:''}</span>
     </div>`;
+  }).join('')+barLegendHtml();
+}
+// Legend for the work/break bars. Permanent rather than hover-only: the app installs to an
+// iPhone home screen, where there is no hover to reveal anything.
+function barLegendHtml(){
+  return `<div class="splitleg" style="margin-top:8px">
+      <span><i style="background:var(--accent-bright)"></i>${t('work')}</span>
+      <span><i style="background:var(--break)"></i>${t('breakRow')}</span>
+    </div>`;
+}
+// Shared by the week and month rails: work packages rolled up into their project.
+function positionBreakdownHtml(per,totalWork,emptyMsg){
+  const groups={};
+  Object.entries(per).filter(([k])=>k!=='__un'&&k!==PAUSE()).forEach(([k,v])=>{
+    const p=posById(k); if(!p) return;
+    const r=rootOf(p);
+    const g=groups[r.id]=groups[r.id]||{pos:r,total:0,kids:[]};
+    g.total+=v;
+    if(r.id!==p.id) g.kids.push([p,v]);
+  });
+  const rows=Object.values(groups).sort((a,b)=>b.total-a.total);
+  const tw=totalWork||1;
+  if(!rows.length) return `<p class="dim" style="margin:0">${emptyMsg}</p>`;
+  return rows.map(g=>{
+    const kids=g.kids.sort((a,b)=>b[1]-a[1]).map(([p,v])=>
+      `<div class="stat-top" style="font-size:11.5px;color:var(--dim);padding-left:12px">
+         <span>${esc(p.label)}</span><span class="tabnum">${fmtDur(v)}</span></div>`).join('');
+    return `<div class="stat">
+      <div class="stat-top"><span>${esc(g.pos.label)}<span class="pct">${Math.round(g.total/tw*100)}%</span></span><span class="tabnum">${fmtDur(g.total)}</span></div>
+      <div class="bar"><i style="width:${g.total/tw*100}%;background:${posColor(g.pos)}"></i></div>
+      ${kids}
+    </div>`;
   }).join('');
+}
+
+/* ============================ month view ============================ */
+function monthStats(anchor){
+  const first=new Date(anchor.getFullYear(),anchor.getMonth(),1);
+  const last=new Date(anchor.getFullYear(),anchor.getMonth()+1,0);
+  const days=[], per={};
+  let work=0,pause=0,unlabeledCount=0,target=0,expected=0,weekdays=0,missing=0,viol=0;
+  const leave={holiday:0,vacation:0,sick:0};
+  for(let i=1;i<=last.getDate();i++){
+    const d=new Date(anchor.getFullYear(),anchor.getMonth(),i), dm=d.getTime();
+    const bl=blocksOfDay(dm);
+    let w=0,p=0,uc=0;
+    bl.forEach(b=>{
+      const dur=bEnd(b)-b.start, key=b.positionId||'__un';
+      per[key]=(per[key]||0)+dur;
+      if(b.positionId===PAUSE()) p+=dur; else if(b.positionId) w+=dur; else uc++;
+    });
+    const ty=dayType(dm), compl=complianceOf(bl);
+    if(ty) leave[ty]++;
+    if(isWeekday(dm)) weekdays++;
+    if(isExpected(dm)){ expected++; if(!bl.length) missing++; }
+    if(compl.viol) viol++;
+    work+=w; pause+=p; unlabeledCount+=uc; target+=dayTargetMs(dm);
+    days.push({date:d, ms:dm, work:w, pause:p, count:bl.length, type:ty, compl,
+               bill:splitBillable(bl)});
+  }
+  return {first,last,days,per,work,pause,unlabeledCount,target,expected,weekdays,missing,viol,leave};
+}
+function renderMonth(){
+  const st=monthStats(selectedDate), mv=el('monthview');
+  const names=t('dayNames'), todayMs=todayMid();
+  const gridStart=startOfWeek(st.first);
+  const cells=[];
+  for(let i=0;i<42;i++){
+    const d=addDays(gridStart,i), dm=d.getTime();
+    if(i>=35 && dm>st.last.getTime()) break;             // 6th row only when the month needs it
+    const inMonth=d.getMonth()===st.first.getMonth();
+    const s=st.days.find(x=>x.ms===dm);
+    const bw=s?s.bill.fact+s.bill.intern:0;
+    cells.push(`<div class="mo-cell${inMonth?'':' out'}${dm===todayMs?' today':''}${[0,6].includes(d.getDay())?' we':''}"
+         data-day="${dm}" title="${esc(d.toLocaleDateString(loc(),{weekday:'long',day:'numeric',month:'long'}))}">
+      <div class="mo-top">
+        <span class="mo-date">${d.getDate()}</span>
+        ${s&&s.type?dtBadge(s.type):''}
+      </div>
+      <div class="mo-h tabnum">${s&&s.work?fmtDur(s.work):(inMonth?'<span class="dim">–</span>':'')}</div>
+      ${bw?`<div class="mo-split"><i style="width:${s.bill.fact/bw*100}%;background:var(--accent-bright)"></i><i style="width:${s.bill.intern/bw*100}%;background:var(--intern)"></i></div>`:''}
+      <div class="mo-flags">
+        ${s&&s.compl.viol?`<span class="flag warn">${t('complWarnShort')}</span>`:''}
+      </div>
+    </div>`);
+  }
+  mv.innerHTML=`<div class="mo-head">${names.map(n=>`<div>${n}</div>`).join('')}</div>
+    <div class="mo-grid">${cells.join('')}</div>
+    <p class="hint" style="margin:10px 0 0">${t('clickDayHint')}</p>`;
+  mv.querySelectorAll('[data-day]').forEach(n=>n.onclick=()=>{
+    selectedDate=new Date(+n.dataset.day); viewMode='day'; selectedId=null; render();
+  });
+  renderMonthRail(st);
+}
+function renderMonthRail(st){
+  const diff=st.work-st.target, over=diff>=0;
+  const offTotal=st.leave.holiday+st.leave.vacation+st.leave.sick;
+  el('now-card').innerHTML=`<h3>${st.first.toLocaleDateString(loc(),{month:'long',year:'numeric'})}</h3>
+    <div class="elapsed tabnum">${fmtDur(st.work)}</div>
+    <div class="dim tabnum">${t('monthTotal')} / ${fmtDur(st.target)} ·
+      ${over?t('over'):t('under')} ${fmtDur(Math.abs(diff))}</div>
+    <div class="dim" style="font-size:11.5px;margin-top:2px">${t('expectedDays',st.expected,st.weekdays)}</div>
+    <div class="bar" style="margin-top:10px"><i style="width:${Math.min(100,st.target?st.work/st.target*100:0)}%;background:var(--accent-bright)"></i></div>
+    <div class="tline" style="margin-top:10px"><span class="dim">${t('breakRow')}</span><span class="tabnum dim">${fmtDur(st.pause)}</span></div>
+    ${billSplitHtml(st.days.flatMap(d=>blocksOfDay(d.ms)))}
+    ${offTotal?`<div class="tline"><span class="dim">${t('leaveTally')}</span><span class="tabnum dim">${
+      DAY_TYPES.filter(k=>st.leave[k]).map(k=>`${st.leave[k]} ${t('dt_'+k)}`).join(' · ')}</span></div>`:''}`;
+  // by position
+  el('editor-card').hidden=false;
+  el('editor-card').innerHTML=`<h3>${t('byPosition')}</h3>`+positionBreakdownHtml(st.per,st.work,t('noDataMonth'));
+  // per week + completeness
+  const weeks=[];
+  st.days.forEach(d=>{
+    const ws=startOfWeek(d.date).getTime();
+    let w=weeks.find(x=>x.ws===ws);
+    if(!w) weeks.push(w={ws,no:isoWeekNo(d.date),work:0,pause:0});
+    w.work+=d.work; w.pause+=d.pause;
+  });
+  const maxW=Math.max(...weeks.map(w=>w.work+w.pause),1);
+  const issues=[];
+  if(st.missing) issues.push(`<div class="compl warn">${t('missingDays',st.missing)}</div>`);
+  if(st.unlabeledCount) issues.push(`<div class="compl warn">${t('monthUnlabeled',st.unlabeledCount)}</div>`);
+  if(st.viol) issues.push(`<div class="compl warn">${t('breakViol',st.viol)}</div>`);
+  el('totals-card').innerHTML=`<h3>${t('perWeek')}</h3>`+weeks.map(w=>{
+    const tip=`${t('week')} ${w.no} — ${t('work')} ${fmtDur(w.work)} · ${t('breakRow')} ${fmtDur(w.pause)}`;
+    return `<div class="dayrow${w.work+w.pause?'':' zero'}" title="${esc(tip)}">
+      <span class="dim">${t('week')} ${w.no}</span>
+      <span class="dbar">
+        <i style="width:${w.work/maxW*100}%;background:var(--accent-bright)"></i>
+        <i style="width:${w.pause/maxW*100}%;background:var(--break)"></i>
+      </span>
+      <span class="tabnum">${w.work?fmtDur(w.work):'–'}</span>
+    </div>`;
+  }).join('')+barLegendHtml()
+   +`<h3 style="margin-top:16px">${t('completeness')}</h3>`
+   +(issues.length?issues.join(''):`<div class="compl ok">${t('allComplete')}</div>`);
 }
 
 /* ============================ Projectile export ============================ */
@@ -1813,11 +2123,22 @@ const XCOLS={
   dur:  {t:'colDur',   v:r=>fmtDurExport(r.end-r.start)},
   proj: {t:'colProject',v:r=>{ const p=posById(r.positionId), pr=p&&projectOf(p); return pr?(pr.code||pr.label):''; }},
   pos:  {t:'colPos',   v:r=>{ const p=posById(r.positionId); return p?(p.code||p.label):''; }},
-  desc: {t:'colDesc',  v:r=>r.descs.join(descSep())}
+  desc: {t:'colDesc',  v:r=>joinDescs(r.descs)}
 };
 // Projectile instances differ in what they accept between merged descriptions, so the
 // separator is a setting. Stored verbatim; spaces around it are the user's choice.
-function descSep(){ const s=S().descSep; return s==null?';':s; }
+function descSep(){ const s=S().descSep; return s==null?'; ':s; }
+// Descriptions are written as sentences ending in a period. Strung together with a
+// separator those periods double up ("a.; b."), so every part but the last drops its
+// trailing full stop and the sentence still closes at the end of the cell.
+// A trailing space in a text field is invisible, and this setting depends on one — so the
+// preview spells the separator out with a middot standing in for each space.
+function showWs(s){ return String(s).replace(/ /g,'␣'); }
+function stripEndPeriod(s){ return String(s).replace(/\s*\.\s*$/,''); }
+function joinDescs(descs){
+  if(!descs.length) return '';
+  return descs.map((d,i)=> i===descs.length-1 ? d : stripEndPeriod(d)).join(descSep());
+}
 function activeCols(){ const c=S().exportCols||[]; return Object.keys(XCOLS).filter(k=>c.includes(k)); }
 
 let xstate=null;   // {cells:[{r,c,val}], i}
@@ -1954,7 +2275,9 @@ load(); applyTheme(); selectedDate=new Date(todayMid()); render(); checkStale();
 setInterval(()=>{
   if(drag.active || viewMode!=='day' || el('overlay').style.display==='flex' || !isToday()) return;
   const r=runningBlock(); if(!r) return;
-  renderTimeline(); renderTotals();
+  renderTimeline();
+  // The totals card now holds a <select>; rebuilding it under an open dropdown closes it.
+  if(!el('totals-card').contains(document.activeElement)) renderTotals();
   const ee=el('now-elapsed'); if(ee) ee.textContent=fmtDur(now()-r.start);
 },1000);
 </script>
