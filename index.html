@@ -158,6 +158,17 @@
   .compl{margin-top:10px; padding:8px 10px; border-radius:var(--radius-sm); font-size:12.5px}
   .compl.ok{background:var(--accent-soft); color:var(--accent-bright)}
   .compl.warn{background:rgba(244,186,64,.16); color:var(--break)}
+  /* A warning you can act on: same box, but it is a button that jumps to the first day
+     carrying the problem it is counting. */
+  button.compl{display:flex; align-items:center; gap:8px; width:100%; text-align:left;
+    font:inherit; font-size:12.5px; border:1px solid transparent; cursor:pointer}
+  button.compl:hover{border-color:var(--break)}
+  button.compl .go-arr{margin-left:auto; opacity:.7; font-size:15px; line-height:1}
+  /* A day that needs attention is hatched, the way an unlabeled block is on the timeline —
+     visible before you read a single flag. */
+  .mo-cell.flagged, .wk-col.flagged{
+    background-image:repeating-linear-gradient(45deg,transparent,transparent 7px,
+      rgba(244,186,64,.10) 7px,rgba(244,186,64,.10) 14px)}
   /* ---- modal ---- */
   #overlay{position:fixed; inset:0; background:rgba(0,0,0,.55); display:none; align-items:center; justify-content:center; z-index:50}
   .modal{background:var(--card); border-radius:var(--radius); box-shadow:0 8px 32px rgba(0,0,0,.5); width:min(540px,92vw); max-height:86vh; overflow:auto; padding:20px}
@@ -430,6 +441,7 @@
 const DEMO=/[?&]demo\b/.test(location.search);
 const KEY=DEMO?'projector-demo-v1':'projector-v1';
 const PPM=1.5;                 // pixels per minute on the timeline
+const LOOKAHEAD=90;            // days `n` will search forward once the current day is clean
 const DAY=86400000;
 let state, selectedDate, selectedId=null, playhead=null, viewMode='day';
 let curWinStart=0;             // window start in minutes-of-day (set during render)
@@ -478,6 +490,9 @@ const I18N={
     wgTag:'Hub', prjTag:'PEG', wgPh:'HUB',
     noWgWarn:n=>`${n} Themenarbeit block${n>1?'s':''} without a Hub.`,
     scTagTab:'Hub → PEG → description',
+    shortUnlabeled:'pos!', shortNoWg:'hub!',
+    tNoIssue:'Nothing left to fix here.',
+    tJumpedTo:d=>`Jumped to ${d}`,
     demoHint:'Sample data in its own storage — your real days are untouched. Click to reset it.',
     demoReset:'Throw away the demo store and generate fresh sample data?',
     tPresetNeedsWg:'A Hub or PEG row needs a Hub.',
@@ -523,7 +538,7 @@ const I18N={
     copyRow:'Copy row', copyAll:'Copy all', close:'Close', reset:'Restart',
     tCopied:v=>`Copied “${v}”`, tAllCopied:'All rows copied', tRowCopied:'Row copied', tExportDone:'Last cell copied — done.',
     tCopyFail:'Copy failed — click the cell directly.', tEmptyCell:'Empty cell — skipped.',
-    tNoUnlabeled:'No unlabeled blocks left on this day.', tCleared:'Position cleared',
+    tCleared:'Position cleared',
     tNoHotkey:n=>`No position on ${n}`, qpFilter:'Type to filter…',
     qpHint:'↑/↓ move · Enter pick · 1–9 hotkey · Esc cancel',
     scLabeling:'Fast labeling', scAssign:'Assign position 1–9',
@@ -589,6 +604,9 @@ const I18N={
     wgTag:'Hub', prjTag:'PEG', wgPh:'HUB',
     noWgWarn:n=>`${n} Themenarbeit-${n>1?'Blöcke':'Block'} ohne Hub.`,
     scTagTab:'Hub → PEG → Beschreibung',
+    shortUnlabeled:'Pos!', shortNoWg:'Hub!',
+    tNoIssue:'Hier ist nichts mehr offen.',
+    tJumpedTo:d=>`Gesprungen zu ${d}`,
     demoHint:'Beispieldaten in eigenem Speicher — die echten Tage bleiben unberührt. Klicken setzt sie zurück.',
     demoReset:'Demo-Speicher verwerfen und neue Beispieldaten erzeugen?',
     tPresetNeedsWg:'Eine Hub- oder PEG-Zeile braucht einen Hub.',
@@ -634,7 +652,7 @@ const I18N={
     copyRow:'Zeile kopieren', copyAll:'Alles kopieren', close:'Schließen', reset:'Neu starten',
     tCopied:v=>`„${v}“ kopiert`, tAllCopied:'Alle Zeilen kopiert', tRowCopied:'Zeile kopiert', tExportDone:'Letzte Zelle kopiert — fertig.',
     tCopyFail:'Kopieren fehlgeschlagen — Zelle direkt anklicken.', tEmptyCell:'Leere Zelle — übersprungen.',
-    tNoUnlabeled:'Keine Blöcke ohne Position an diesem Tag.', tCleared:'Position entfernt',
+    tCleared:'Position entfernt',
     tNoHotkey:n=>`Keine Position auf ${n}`, qpFilter:'Tippen zum Filtern…',
     qpHint:'↑/↓ bewegen · Enter wählen · 1–9 Kürzel · Esc abbrechen',
     scLabeling:'Schnelles Zuordnen', scAssign:'Position 1–9 zuweisen',
@@ -1037,6 +1055,48 @@ function ensureHotkeys(){
   return changed;
 }
 
+/* --- warnings: from a count to a place ---
+   A count in a rail says something is wrong somewhere in the week or month; on its own it
+   sends you opening days one by one. These turn a count into a day and a block to jump to,
+   and into a short flag on the day itself. --- */
+function issueBlocks(kind,blocks){
+  if(kind==='unlabeled') return blocks.filter(b=>!b.positionId);
+  if(kind==='noWg') return untaggedBlocks(blocks);
+  return [];
+}
+// First day at or after `fromMs` (searching `span` days) that carries this kind of problem,
+// plus the block responsible where there is one. The break rule is a property of the day.
+function findIssue(kind,fromMs,span){
+  for(let i=0;i<span;i++){
+    const dm=fromMs+i*DAY, bl=blocksOfDay(dm);
+    if(kind==='break'){ if(complianceOf(bl).viol) return {ms:dm,id:null}; continue; }
+    if(kind==='missing'){ if(isExpected(dm)&&!bl.length) return {ms:dm,id:null}; continue; }
+    const bad=issueBlocks(kind,bl)[0];
+    if(bad) return {ms:dm,id:bad.id};
+  }
+  return null;
+}
+function gotoIssue(kind,fromMs,span){
+  const hit=findIssue(kind,fromMs,span);
+  if(!hit){ toast(t('tNoIssue')); return; }
+  selectedDate=new Date(hit.ms); viewMode='day';
+  if(hit.id) selectAndReveal(hit.id); else { selectedId=null; render(); }
+}
+// A rail warning is a button, so the count you are reading is also the way to reach it.
+function issueBtn(kind,fromMs,span,label){
+  return `<button class="compl warn go" data-issue="${kind}" data-from="${fromMs}" data-span="${span}">
+    ${label}<span class="go-arr">›</span></button>`;
+}
+// The short flags a day carries, worst first. Shared by the month grid and the week rows so
+// the two can never disagree about what counts as a bad day.
+function dayFlagsHtml(s){
+  if(!s) return '';
+  return (s.unlabeled?`<span class="flag warn" title="${esc(t('unlabeledWarn',s.unlabeled))}">${t('shortUnlabeled')}</span>`:'')
+       +(s.noWg?`<span class="flag warn" title="${esc(t('noWgWarn',s.noWg))}">${t('shortNoWg')}</span>`:'')
+       +(s.compl&&s.compl.viol?`<span class="flag warn" title="${esc(t('warnBreak'))}">${t('complWarnShort')}</span>`:'');
+}
+function dayFlagged(s){ return !!s && !!(s.unlabeled||s.noWg||(s.compl&&s.compl.viol)); }
+
 /* ============================ rendering ============================ */
 function render(){
   renderHeader();
@@ -1330,8 +1390,8 @@ function renderTotals(){
         <option value=""${dt?'':' selected'}>${isWeekday(dm)?t('dtWork'):t('dtWeekend')}</option>
         ${DAY_TYPES.map(v=>`<option value="${v}"${dt===v?' selected':''}>${t('dt_'+v)}</option>`).join('')}
       </select></div>
-    ${unlabeled?`<div class="compl warn">${t('unlabeledWarn',unlabeled)}</div>`:''}
-    ${noWg?`<div class="compl warn">${t('noWgWarn',noWg)}</div>`:''}
+    ${unlabeled?issueBtn('unlabeled',dm,1,t('unlabeledWarn',unlabeled)):''}
+    ${noWg?issueBtn('noWg',dm,1,t('noWgWarn',noWg)):''}
     ${compl}`;
   el('ed-daytype').onchange=e=>{ setDayType(dm,e.target.value||null); render(); };
 }
@@ -1695,6 +1755,14 @@ el('help-btn').onclick=openShortcuts;
 el('m-toggle').onclick=()=>{ document.body.classList.toggle('show-rail'); renderHeader(); };
 const isNarrow=()=>window.matchMedia('(max-width:820px)').matches;
 
+// Rail warnings are rendered by three different functions and rebuilt constantly, so the
+// jump is delegated once here rather than re-bound on every render.
+document.addEventListener('click',e=>{
+  const b=e.target.closest&&e.target.closest('[data-issue]');
+  if(!b) return;
+  e.preventDefault();
+  gotoIssue(b.dataset.issue,+b.dataset.from,+b.dataset.span);
+});
 document.addEventListener('keydown',e=>{
   if(/^(INPUT|SELECT|TEXTAREA)$/.test(e.target.tagName)) return;
   if(el('overlay').style.display==='flex'){
@@ -2055,10 +2123,19 @@ function unlabeledBlocks(){ return dayBlocks().filter(b=>!b.positionId); }
 // Wraps around, and starts from the current block so repeated `n` walks the whole day.
 function gotoNextUnlabeled(){
   const un=unlabeledBlocks();
-  if(!un.length){ toast(t('tNoUnlabeled')); return false; }
-  const bl=dayBlocks(), cur=bl.findIndex(b=>b.id===selectedId);
-  const next=un.find(b=>bl.indexOf(b)>cur) || un[0];
-  selectAndReveal(next.id);
+  if(un.length){
+    const bl=dayBlocks(), cur=bl.findIndex(b=>b.id===selectedId);
+    const next=un.find(b=>bl.indexOf(b)>cur)
+            || (un[0].id!==selectedId ? un[0] : null);   // wrap, unless that means standing still
+    if(next){ selectAndReveal(next.id); return true; }
+  }
+  // Nothing more here — carry on into the days ahead rather than stopping at midnight,
+  // since the counts in the week and month rails are what sent you looking to begin with.
+  // Without this, a day holding exactly one unlabeled block was a dead end for `n`.
+  const hit=findIssue('unlabeled',dayStartMs()+DAY,LOOKAHEAD);
+  if(!hit){ toast(t('tNoIssue')); return false; }
+  selectedDate=new Date(hit.ms); viewMode='day'; selectAndReveal(hit.id);
+  toast(t('tJumpedTo',new Date(hit.ms).toLocaleDateString(loc(),{weekday:'short',day:'numeric',month:'short'})));
   return true;
 }
 function gotoBlock(dir){
@@ -2235,7 +2312,10 @@ function renderWeek(){
       return `<div class="wk-blk${p?'':' un'}" style="top:${top}px;height:${ht}px;${p?`background:${posColor(p)};`:''}"
         title="${esc((p?p.label:t('unlabeled'))+' · '+fmtHM(b.start)+'–'+fmtHM(bEnd(b)))}">${ht>18?esc(p?p.label:t('unlabeled')):''}</div>`;
     }).join('');
-    return `<div class="wk-col${d.ms===todayMs?' today':''}${[0,6].includes(d.date.getDay())?' we':''}" data-day="${d.ms}" style="height:${H}px;background-image:${lines}">${inner}</div>`;
+    // The column paints its hour rules with background-image, so a flagged day appends its
+    // hatch to that list instead of replacing it.
+    const hatch='repeating-linear-gradient(45deg,transparent,transparent 7px,rgba(244,186,64,.10) 7px,rgba(244,186,64,.10) 14px)';
+    return `<div class="wk-col${d.ms===todayMs?' today':''}${[0,6].includes(d.date.getDay())?' we':''}" data-day="${d.ms}" style="height:${H}px;background-image:${dayFlagged(d)?hatch+','+lines:lines}">${inner}</div>`;
   }).join('');
   wv.innerHTML=head+`<div class="wk-grid" style="height:${H}px">${gut}${cols}</div>
     <p class="hint wk-hint">${t('clickDayHint')}</p>`;
@@ -2260,8 +2340,9 @@ function renderWeekRail(ws,st){
     <div class="bar" style="margin-top:10px"><i style="width:${Math.min(100,target?st.work/target*100:0)}%;background:var(--accent-bright)"></i></div>
     <div class="tline" style="margin-top:10px"><span class="dim">${t('breakRow')}</span><span class="tabnum dim">${fmtDur(st.pause)}</span></div>
     ${billSplitHtml(st.days.flatMap(d=>blocksOfDay(d.ms)))}
-    ${st.unlabeledCount?`<div class="compl warn">${t('weekUnlabeled',st.unlabeledCount)}</div>`:''}
-    ${st.noWgCount?`<div class="compl warn">${t('noWgWarn',st.noWgCount)}</div>`:''}`;
+    ${st.unlabeledCount?issueBtn('unlabeled',ws.getTime(),7,t('weekUnlabeled',st.unlabeledCount)):''}
+    ${st.noWgCount?issueBtn('noWg',ws.getTime(),7,t('noWgWarn',st.noWgCount)):''}
+    ${st.days.some(d=>d.compl.viol)?issueBtn('break',ws.getTime(),7,t('warnBreak')):''}`;
   // by position — work packages rolled up into their project
   el('editor-card').hidden=false;
   el('editor-card').innerHTML=`<h3>${t('byPosition')}</h3>`+positionBreakdownHtml(st.per,st.work,t('noDataWeek'));
@@ -2279,7 +2360,7 @@ function renderWeekRail(ws,st){
         <i style="width:${d.work/maxDay*100}%;background:var(--accent-bright)"></i>
         <i style="width:${d.pause/maxDay*100}%;background:var(--break)"></i>
       </span>
-      <span class="tabnum">${d.work?fmtDur(d.work):'–'}${d.compl.viol?`<span class="flag warn">${t('complWarnShort')}</span>`:''}</span>
+      <span class="tabnum">${d.work?fmtDur(d.work):'–'}${dayFlagsHtml(d)}</span>
     </div>`;
   }).join('')+barLegendHtml();
 }
@@ -2350,7 +2431,8 @@ function renderMonth(){
     const inMonth=d.getMonth()===st.first.getMonth();
     const s=st.days.find(x=>x.ms===dm);
     const bw=s?s.bill.fact+s.bill.intern:0;
-    cells.push(`<div class="mo-cell${inMonth?'':' out'}${dm===todayMs?' today':''}${[0,6].includes(d.getDay())?' we':''}"
+    const flagged=inMonth&&dayFlagged(s);
+    cells.push(`<div class="mo-cell${inMonth?'':' out'}${dm===todayMs?' today':''}${[0,6].includes(d.getDay())?' we':''}${flagged?' flagged':''}"
          data-day="${dm}" title="${esc(d.toLocaleDateString(loc(),{weekday:'long',day:'numeric',month:'long'}))}">
       <div class="mo-top">
         <span class="mo-date">${d.getDate()}</span>
@@ -2358,9 +2440,7 @@ function renderMonth(){
       </div>
       <div class="mo-h tabnum">${s&&s.work?fmtDur(s.work):(inMonth?'<span class="dim">–</span>':'')}</div>
       ${bw?`<div class="mo-split"><i style="width:${s.bill.fact/bw*100}%;background:var(--accent-bright)"></i><i style="width:${s.bill.intern/bw*100}%;background:var(--intern)"></i></div>`:''}
-      <div class="mo-flags">
-        ${s&&s.compl.viol?`<span class="flag warn">${t('complWarnShort')}</span>`:''}
-      </div>
+      <div class="mo-flags">${dayFlagsHtml(s)}</div>
     </div>`);
   }
   mv.innerHTML=`<div class="mo-head">${names.map(n=>`<div>${n}</div>`).join('')}</div>
@@ -2396,11 +2476,12 @@ function renderMonthRail(st){
     w.work+=d.work; w.pause+=d.pause;
   });
   const maxW=Math.max(...weeks.map(w=>w.work+w.pause),1);
+  const m0=st.first.getTime(), span=st.days.length;
   const issues=[];
-  if(st.missing) issues.push(`<div class="compl warn">${t('missingDays',st.missing)}</div>`);
-  if(st.unlabeledCount) issues.push(`<div class="compl warn">${t('monthUnlabeled',st.unlabeledCount)}</div>`);
-  if(st.noWgCount) issues.push(`<div class="compl warn">${t('noWgWarn',st.noWgCount)}</div>`);
-  if(st.viol) issues.push(`<div class="compl warn">${t('breakViol',st.viol)}</div>`);
+  if(st.missing) issues.push(issueBtn('missing',m0,span,t('missingDays',st.missing)));
+  if(st.unlabeledCount) issues.push(issueBtn('unlabeled',m0,span,t('monthUnlabeled',st.unlabeledCount)));
+  if(st.noWgCount) issues.push(issueBtn('noWg',m0,span,t('noWgWarn',st.noWgCount)));
+  if(st.viol) issues.push(issueBtn('break',m0,span,t('breakViol',st.viol)));
   el('totals-card').innerHTML=`<h3>${t('perWeek')}</h3>`+weeks.map(w=>{
     const tip=`${t('week')} ${w.no} — ${t('work')} ${fmtDur(w.work)} · ${t('breakRow')} ${fmtDur(w.pause)}`;
     return `<div class="dayrow${w.work+w.pause?'':' zero'}" title="${esc(tip)}">

@@ -277,6 +277,42 @@ function run(){
     return eq([wk.work,wk.pause,wk.noWgCount],[day.work,day.pause,day.noWg]);
   });
 
+  H('finding warnings');
+
+  test('issueBlocks picks out the unlabeled and the Hub-less',()=>{
+    store([[[9,0],[10,0],null,''],[[10,0],[11,0],'solo','x'],[[11,0],[12,0],'peg','y']]);
+    const bl=blocks();
+    return eq([W.issueBlocks('unlabeled',bl).map(b=>b.id),W.issueBlocks('noWg',bl).map(b=>b.id)],
+              [['t0'],['t1']]);
+  });
+
+  test('findIssue reports the day and the block responsible',()=>{
+    store([]);
+    const later=mondayMs()+3*86400000;
+    G.state.blocks=[{id:'x',start:later+9*3600000,end:later+10*3600000,positionId:null,description:''}];
+    const hit=W.findIssue('unlabeled',mondayMs(),7);
+    return eq([hit.ms===later,hit.id],[true,'x']);
+  });
+
+  test('findIssue skips clean days and gives up past the span',()=>{
+    store([[[9,0],[10,0],'dev','x']]);
+    return eq(W.findIssue('unlabeled',mondayMs(),7),null);
+  });
+
+  test('a break violation is a property of the day, not of one block',()=>{
+    store([[[8,0],[15,0],'dev','x'],[[15,0],[15,30],'pause']]);
+    const hit=W.findIssue('break',mondayMs(),7);
+    return eq([hit.ms===mondayMs(),hit.id],[true,null]);
+  });
+
+  test('dayFlagged is true only when a day actually carries something',()=>{
+    store([[[9,0],[10,0],'dev','x']]);
+    const clean=W.statsFor(blocks()); clean.compl=W.complianceOf(blocks());
+    store([[[9,0],[10,0],null,'']]);
+    const dirty=W.statsFor(blocks()); dirty.compl=W.complianceOf(blocks());
+    return eq([W.dayFlagged(clean),W.dayFlagged(dirty)],[false,true]);
+  });
+
   H('billability');
 
   test('a work package inherits its project',()=>{
