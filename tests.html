@@ -1,0 +1,302 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Projector — tests</title>
+<style>
+  :root{color-scheme:dark light}
+  body{font:14px/1.5 ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+    margin:0; padding:24px; background:#1c1b22; color:#e7e6ee}
+  h1{font-size:17px; margin:0 0 4px}
+  .lead{color:#9b98ad; margin:0 0 18px; max-width:64ch}
+  #sum{display:inline-block; padding:6px 12px; border-radius:999px; font-weight:600; margin-bottom:16px}
+  .ok{background:#2c4a33; color:#a8dcb5}
+  .bad{background:#5a2b2b; color:#f0b4b4}
+  h2{font-size:12px; letter-spacing:.09em; text-transform:uppercase; color:#9b98ad;
+    margin:20px 0 6px; font-weight:600}
+  .t{padding:3px 0 3px 20px; position:relative; border-bottom:1px solid #2c2b36}
+  .t:last-child{border-bottom:none}
+  .t::before{position:absolute; left:2px}
+  .t.p::before{content:"✓"; color:#7fbf8f}
+  .t.f::before{content:"✕"; color:#e88}
+  .t.f{color:#f0b4b4}
+  .why{color:#9b98ad; font-size:12.5px; padding-left:20px; white-space:pre-wrap}
+  code{background:#26252f; padding:1px 5px; border-radius:4px; font-size:12.5px}
+  iframe{display:none}
+</style>
+</head>
+<body>
+<h1>Projector — tests</h1>
+<p class="lead">Covers the pure core: description composition, export rows, the break rule,
+targets and billability. Runs <code>index.html</code> in a hidden frame and calls its
+functions directly, so there is still no build step — but it must be <b>served</b>, not
+opened from <code>file://</code>, or the frame's window stays unreachable.</p>
+<div id="sum">running…</div>
+<div id="out"></div>
+<iframe id="app" src="index.html?demo"></iframe>
+
+<script>
+"use strict";
+let W=null, G=null, pass=0, fail=0;
+const out=document.getElementById('out');
+
+function H(k){ const d=document.createElement('h2'); d.textContent=k; out.appendChild(d); }
+function line(okFlag,name,why){
+  const d=document.createElement('div');
+  d.className='t '+(okFlag?'p':'f'); d.textContent=name; out.appendChild(d);
+  if(!okFlag&&why){ const w=document.createElement('div'); w.className='why'; w.textContent=why; out.appendChild(w); }
+  okFlag?pass++:fail++;
+}
+function test(name,fn){
+  try{ const why=fn(); line(why==null,name,why); }
+  catch(e){ line(false,name,(e&&e.stack)||String(e)); }
+}
+const J=v=>JSON.stringify(v);
+function eq(actual,expected,label){
+  if(J(actual)===J(expected)) return null;
+  return (label?label+'\n':'')+'  expected: '+J(expected)+'\n  actual:   '+J(actual);
+}
+
+/* --- fixtures -------------------------------------------------------------
+   Every test owns the whole store, so no test can be perturbed by another and
+   none of them depend on the demo data that happens to be in the frame. */
+function mondayMs(){ const d=new Date(2026,4,11); d.setHours(0,0,0,0); return d.getTime(); }
+function at(h,m){ return mondayMs()+((h*60)+(m||0))*60000; }
+
+const POS=()=>[
+  {id:'pause',code:'PAUSE',label:'Pause',color:'#d49a4a',archived:false,reserved:true,parentId:null,billable:false,hotkey:9},
+  {id:'thema',code:'THEMA',label:'Themenarbeit',color:'#6b7a8f',archived:false,parentId:null,billable:false,tagged:true},
+  {id:'hub',  code:'',     label:'Hub Daten',   color:null,archived:false,parentId:'thema',billable:null,wg:'HUB-DAT'},
+  {id:'peg',  code:'',     label:'Studie Nord', color:null,archived:false,parentId:'thema',billable:null,wg:'HUB-DAT',prj:'PEG-2451'},
+  {id:'solo', code:'QUER', label:'Quer',        color:'#8a6fae',archived:false,parentId:null,billable:false,tagged:true},
+  {id:'kunde',code:'PRJ-A',label:'Kunde Alpha', color:'#5e7ce0',archived:false,parentId:null,billable:true},
+  {id:'dev',  code:'PRJ-A-DEV',label:'Entwicklung',color:null,archived:false,parentId:'kunde',billable:null}
+];
+// `over` patches settings; blocks are [startHM, endHM, positionId, description, extra].
+function store(blocks,over){
+  const s=W.defaults();
+  s.positions=POS();
+  s.settings=Object.assign(s.settings,over||{});
+  s.blocks=(blocks||[]).map((b,i)=>Object.assign(
+    {id:'t'+i,start:at(b[0][0],b[0][1]),end:at(b[1][0],b[1][1]),positionId:b[2]||null,description:b[3]||''},
+    b[4]||{}));
+  G.state=s;
+  G.selectedDate=new Date(mondayMs());
+  return s;
+}
+const rows=()=>W.mergedRows(G.state.blocks.filter(b=>b.end!=null));
+const cells=()=>rows().map(r=>['start','end','pos','desc'].map(c=>G.XCOLS[c].v(r)));
+const blocks=()=>G.state.blocks;
+
+/* --- the suites ---------------------------------------------------------- */
+function run(){
+  H('description composition');
+
+  test('a plain position exports its description untouched',()=>{
+    store([[[9,0],[10,0],'dev','Parser gefixt.']]);
+    return eq(W.composedDesc(blocks()[0]),'Parser gefixt.');
+  });
+
+  test('a PEG row supplies both tags',()=>{
+    store([[[9,0],[10,0],'peg','Aufbereitet.']]);
+    return eq(W.composedDesc(blocks()[0]),'HUB-DAT | PEG-2451 | Aufbereitet.');
+  });
+
+  test('a Hub row with no PEG writes the placeholder',()=>{
+    store([[[9,0],[10,0],'hub','Notiz.']]);
+    return eq(W.composedDesc(blocks()[0]),'HUB-DAT | None | Notiz.');
+  });
+
+  test('the placeholder is configurable',()=>{
+    store([[[9,0],[10,0],'hub','Notiz.']],{tagNone:'-'});
+    return eq(W.composedDesc(blocks()[0]),'HUB-DAT | - | Notiz.');
+  });
+
+  test('a block overrides the row it is booked on',()=>{
+    store([[[9,0],[10,0],'peg','Notiz.',{prj:'PEG-9999'}]]);
+    return eq(W.composedDesc(blocks()[0]),'HUB-DAT | PEG-9999 | Notiz.');
+  });
+
+  test('a Themenarbeit code without sub-positions takes both tags from the block',()=>{
+    store([[[9,0],[10,0],'solo','Notiz.',{wg:'HUB-X',prj:'PEG-1'}]]);
+    return eq(W.composedDesc(blocks()[0]),'HUB-X | PEG-1 | Notiz.');
+  });
+
+  H('tag inheritance (regressions)');
+
+  test('absent means inherit',()=>{
+    store([[[9,0],[10,0],'peg','x']]);
+    return eq(W.effTag(blocks()[0],'prj'),'PEG-2451');
+  });
+
+  test('empty string is an explicit none, not inherit',()=>{
+    store([[[9,0],[10,0],'peg','x',{prj:''}]]);
+    return eq([W.effTag(blocks()[0],'prj'),W.composedDesc(blocks()[0])],
+              ['','HUB-DAT | None | x']);
+  });
+
+  test('a blank separator falls back instead of fusing the cell',()=>{
+    store([[[9,0],[10,0],'peg','x']],{tagSep:''});
+    return eq(W.composedDesc(blocks()[0]),'HUB-DAT | PEG-2451 | x');
+  });
+
+  test('the separator can never appear inside a tag',()=>{
+    store([]);
+    return eq([W.cleanTag('A|B'),W.cleanTag('  C  ')],['AB','C']);
+  });
+
+  H('export rows');
+
+  test('consecutive blocks on one position merge, descriptions joined',()=>{
+    store([[[9,0],[10,0],'dev','Parser gefixt.'],[[10,0],[11,0],'dev','PR 214 geprüft.']]);
+    return eq(cells(),[['09:00','11:00','PRJ-A-DEV','Parser gefixt; PR 214 geprüft.']]);
+  });
+
+  test('a tagged run states its tags exactly once',()=>{
+    store([[[9,0],[10,0],'peg','Erst.'],[[10,0],[11,0],'peg','Dann.']]);
+    return eq(cells(),[['09:00','11:00','THEMA','HUB-DAT | PEG-2451 | Erst; Dann.']]);
+  });
+
+  test('differing tags block the merge even on one position',()=>{
+    store([[[9,0],[10,0],'hub','Erst.',{prj:'PEG-1'}],[[10,0],[11,0],'hub','Dann.',{prj:'PEG-2'}]]);
+    return eq(cells(),[['09:00','10:00','THEMA','HUB-DAT | PEG-1 | Erst.'],
+                       ['10:00','11:00','THEMA','HUB-DAT | PEG-2 | Dann.']]);
+  });
+
+  test('a gap blocks the merge',()=>{
+    store([[[9,0],[10,0],'dev','a.'],[[10,30],[11,0],'dev','b.']]);
+    return eq(rows().length,2);
+  });
+
+  test('merging off gives one row per block',()=>{
+    store([[[9,0],[10,0],'dev','a.'],[[10,0],[11,0],'dev','b.']],{mergeRows:false});
+    return eq(rows().length,2);
+  });
+
+  test('a duplicate description is not repeated in a merged row',()=>{
+    store([[[9,0],[10,0],'dev','Gleich.'],[[10,0],[11,0],'dev','Gleich.']]);
+    return eq(cells()[0][3],'Gleich.');
+  });
+
+  test('both position columns resolve up to the real booking code',()=>{
+    store([[[9,0],[10,0],'peg','x'],[[10,0],[11,0],'dev','y']]);
+    const r=rows();
+    return eq([G.XCOLS.pos.v(r[0]),G.XCOLS.proj.v(r[0]),G.XCOLS.pos.v(r[1]),G.XCOLS.proj.v(r[1])],
+              ['THEMA','','PRJ-A-DEV','PRJ-A']);
+  });
+
+  test('the running block is left out of the export',()=>{
+    store([[[9,0],[10,0],'dev','a.']]);
+    blocks().push({id:'run',start:at(10,0),end:null,positionId:'dev',description:'b.'});
+    return eq(rows().length,1);
+  });
+
+  H('break rule');
+
+  test('under 6 h needs no break',()=>{
+    store([[[9,0],[14,0],'dev','x']]);
+    return eq(W.complianceOf(blocks()).viol,null);
+  });
+
+  test('30 min taken before the 6 h mark passes',()=>{
+    store([[[8,0],[13,0],'dev','x'],[[13,0],[13,30],'pause'],[[13,30],[17,0],'dev','y']]);
+    return eq(W.complianceOf(blocks()).viol,null);
+  });
+
+  test('a break taken after the 6 h mark still violates',()=>{
+    store([[[8,0],[15,0],'dev','x'],[[15,0],[15,30],'pause'],[[15,30],[16,0],'dev','y']]);
+    const v=W.complianceOf(blocks()).viol;
+    return v&&v.at===360?null:eq(v&&v.at,360,'expected a violation at the 6 h mark');
+  });
+
+  test('chunks under 15 min do not count',()=>{
+    store([[[8,0],[11,0],'dev','x'],[[11,0],[11,10],'pause'],[[11,10],[14,0],'dev','y'],
+           [[14,0],[14,20],'pause'],[[14,20],[17,0],'dev','z']]);
+    const v=W.complianceOf(blocks()).viol;
+    return v?null:'expected a violation — only the 20-min chunk is legal, so 20 < 30';
+  });
+
+  test('past 9 h the requirement rises to 45 min',()=>{
+    store([[[7,0],[12,0],'dev','x'],[[12,0],[12,30],'pause'],[[12,30],[17,30],'dev','y']]);
+    const c=W.complianceOf(blocks());
+    return eq([c.required,!!c.viol],[45,true]);
+  });
+
+  H('targets and day types');
+
+  test('a weekday carries the daily target',()=>{
+    store([],{targetHours:8});
+    return eq(W.dayTargetMs(mondayMs()),8*3600000);
+  });
+
+  test('a weekend day carries none',()=>{
+    store([],{targetHours:8});
+    return eq(W.dayTargetMs(mondayMs()-2*86400000),0);
+  });
+
+  test('a day off drops out of the target',()=>{
+    store([],{targetHours:8});
+    G.state.dayTypes[W.isoDate(mondayMs())]='vacation';
+    return eq(W.dayTargetMs(mondayMs()),0);
+  });
+
+  H('billability');
+
+  test('a work package inherits its project',()=>{
+    store([]);
+    return eq(W.isBillable(W.posById('dev')),true);
+  });
+
+  test('Pause is neither factura nor internal',()=>{
+    store([[[9,0],[10,0],'dev','x'],[[10,0],[10,30],'pause'],[[10,30],[11,30],'hub','y']]);
+    const s=W.splitBillable(blocks());
+    return eq([s.fact/3600000,s.intern/3600000,s.pause/3600000],[1,1,0.5]);
+  });
+
+  H('positions model');
+
+  test('a position with sub-positions is not bookable',()=>{
+    store([]);
+    return eq([W.isBookable(W.posById('thema')),W.isBookable(W.posById('peg'))],[false,true]);
+  });
+
+  test('a Hub row hangs under the Themenarbeit code',()=>{
+    store([]);
+    return eq([W.isPreset(W.posById('hub')),W.bookingCodeOf(W.posById('hub')).code],[true,'THEMA']);
+  });
+
+  test('an ordinary work package is its own booking code',()=>{
+    store([]);
+    return eq(W.bookingCodeOf(W.posById('dev')).code,'PRJ-A-DEV');
+  });
+
+  const sum=document.getElementById('sum');
+  sum.className=fail?'bad':'ok';
+  sum.textContent=fail?`${fail} failed, ${pass} passed`:`all ${pass} passed`;
+  document.title=(fail?'✕ ':'✓ ')+sum.textContent+' — Projector tests';
+}
+
+const frame=document.getElementById('app');
+frame.onload=()=>{
+  try{ W=frame.contentWindow; void W.defaults; }
+  catch(e){
+    document.getElementById('sum').className='bad';
+    document.getElementById('sum').textContent='cannot reach the frame — serve this over http, not file://';
+    return;
+  }
+  // The app's top-level `let`/`const` bindings (state, selectedDate, XCOLS) live in the
+  // frame's lexical scope, not on its window, so they cannot be reached from out here.
+  // One eval inside that scope hands back accessors that really do read and write them.
+  // Function declarations are ordinary window properties and need no such help.
+  G=W.eval('({'+
+    'get state(){return state}, set state(v){state=v},'+
+    'set selectedDate(v){selectedDate=v},'+
+    'get XCOLS(){return XCOLS}'+
+  '})');
+  // Fixtures are in-memory only: nothing a test does may reach the demo store on disk.
+  W.save=function(){};
+  run();
+};
+</script>
+</body>
+</html>

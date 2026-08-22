@@ -51,4 +51,6 @@ Data lives in `localStorage` per browser, so it does not sync between devices â€
 
 Installing it to an iOS home screen gives the app its **own storage bucket**: it starts empty even though the same URL in Safari is full of days. The empty state offers the JSON import to seed it.
 
+Open [tests.html](tests.html) from a served copy (not `file://`) to run the test suite â€” it drives `index.html` in a hidden frame, so there is still no build step.
+
 [SPEC.md](SPEC.md) has the reasoning behind the design decisions, [BACKLOG.md](BACKLOG.md) the things not built yet.
