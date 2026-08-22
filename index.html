@@ -64,6 +64,10 @@
   .btn.outline{border-color:var(--line)}
   .btn.outline:hover{border-color:var(--accent)}
   .btn.primary{background:var(--accent-bright); color:var(--on-accent); border-color:var(--accent-bright); font-weight:600}
+  /* Greyed rather than hidden: the toolbar keeps its shape across view switches, and a
+     disabled button with a reason in its tooltip teaches the rule. */
+  .btn:disabled{opacity:.4; cursor:not-allowed}
+  .btn.outline:disabled:hover{border-color:var(--line); color:var(--dim)}
   .btn.primary:hover{background:var(--accent-hover); border-color:var(--accent-hover)}
   .btn.on{color:var(--on-accent); background:var(--accent-bright); border-color:var(--accent-bright)}
   .btn.soon{color:var(--dim); border:1px dashed var(--line); cursor:default}
@@ -529,8 +533,11 @@ const I18N={
     tMerged:l=>`Merged → kept “${l}”`, tTooSmall:'Too small to split here', tMoveMarker:'Move the marker over a block first',
     tSelectFirst:'Select a block first', tNoAdjacent:'No adjacent block to merge', tPosImported:'Positions imported',
     tBackupRestored:'Backup restored', tNotBackup:'Not a valid backup', tInvalidJson:'Invalid JSON',
-    tLabelReq:'Label required', tNothingExport:'Nothing to export for this day', tCalExported:'Calendar exported',
+    tLabelReq:'Label required', tNothingExport:'Nothing to export for this day', tCalExported:d=>`Calendar exported: ${d}`,
     btnTransfer:'Transfer', btnCalendar:'Calendar export', btnSettings:'Settings',
+    ttTransferDay:d=>`Hand ${d} over to Projectile, cell by cell`,
+    ttCalendarDay:d=>`Write ${d} to a .ics file`,
+    ttDayOnly:'Day view only — both act on the single day you are looking at.',
     projExport:'Transfer to Projectile',
     help:'Help', howItWorks:'How tracking works',
     hwStart:['Start day','Begins tracking. From now on every minute belongs to a block.'],
@@ -538,6 +545,8 @@ const I18N={
     hwBreak:['Break','Like Switch, but the new block uses the reserved position “Pause”. Breaks are transferred to Projectile too, and count toward the legal break rule.'],
     hwStop:['Stop','Ends tracking. Time after a Stop is off-clock: it is never transferred — that is how time off differs from a break.'],
     hwSessions:['Several sessions','You can Start and Stop more than once a day (e.g. a doctor’s appointment); the time in between stays off-clock.'],
+    hwWarnings:['Warnings','Every warning in the side panel is a button: it jumps to the first day carrying that problem and selects the block responsible. Days needing attention are hatched and flagged in the week and month views.'],
+    hwDayScope:['Transfer & calendar','Both act on the single day you are looking at, so they are only available in day view.'],
     startHint:'Starts the clock. Everything from here until you press Stop gets tracked.',
     tipSwitch:'End this block, start a new one right after it',
     tipBreak:'Start a break (position “Pause”) — booked, and counts for the break rule',
@@ -553,7 +562,9 @@ const I18N={
     qpHint:'↑/↓ move · Enter pick · 1–9 hotkey · Esc cancel',
     scLabeling:'Fast labeling', scAssign:'Assign position 1–9',
     scClearPos:'Clear position', scEditDesc:'Edit description',
-    scNextUn:'Next block without a position', scNextBlock:'Next / previous block',
+    scPicker:'Quick-pick', scQpMove:'Move through the list', scQpTake:'Take the highlighted position',
+    scQpHotkey:'Jump straight to a hotkey slot', scQpFilter:'Type to filter',
+    scNextUn:'Next block without a position — carries on into later days', scNextBlock:'Next / previous block',
     scQuickPick:'Open position quick-pick', scCommitNext:'Commit and jump to next unlabeled',
     hotkey:'Key', unlabeledLeft:n=>`${n} left without a position`, allLabeled:'All blocks labeled',
     factura:'Factura', internal:'Internal', billability:'Billing', parentPos:'Belongs to',
@@ -649,8 +660,11 @@ const I18N={
     tMerged:l=>`Verbunden → „${l}“ behalten`, tTooSmall:'Zu klein zum Teilen', tMoveMarker:'Erst den Marker über einen Block bewegen',
     tSelectFirst:'Erst einen Block auswählen', tNoAdjacent:'Kein angrenzender Block zum Verbinden', tPosImported:'Positionen importiert',
     tBackupRestored:'Sicherung wiederhergestellt', tNotBackup:'Keine gültige Sicherung', tInvalidJson:'Ungültiges JSON',
-    tLabelReq:'Bezeichnung erforderlich', tNothingExport:'Für diesen Tag gibt es nichts zu exportieren', tCalExported:'Kalender exportiert',
+    tLabelReq:'Bezeichnung erforderlich', tNothingExport:'Für diesen Tag gibt es nichts zu exportieren', tCalExported:d=>`Kalender exportiert: ${d}`,
     btnTransfer:'Übertragen', btnCalendar:'Kalender-Export', btnSettings:'Einstellungen',
+    ttTransferDay:d=>`${d} Zelle für Zelle nach Projectile übertragen`,
+    ttCalendarDay:d=>`${d} als .ics-Datei schreiben`,
+    ttDayOnly:'Nur in der Tagesansicht — beide beziehen sich auf den einen Tag, den du siehst.',
     projExport:'Nach Projectile übertragen',
     help:'Hilfe', howItWorks:'Wie die Zeiterfassung funktioniert',
     hwStart:['Tag starten','Beginnt die Erfassung. Ab jetzt gehört jede Minute zu einem Block.'],
@@ -658,6 +672,8 @@ const I18N={
     hwBreak:['Pause','Wie Wechseln, aber der neue Block bekommt die reservierte Position „Pause“. Pausen werden mit nach Projectile übertragen und zählen für die gesetzliche Pausenregel.'],
     hwStop:['Stopp','Beendet die Erfassung. Zeit nach dem Stopp ist nicht erfasst und wird nie übertragen — so unterscheidet sich Freizeit von einer Pause.'],
     hwSessions:['Mehrere Abschnitte','Du kannst pro Tag mehrmals starten und stoppen (z. B. Arzttermin); die Zeit dazwischen bleibt unerfasst.'],
+    hwWarnings:['Warnungen','Jede Warnung im Seitenbereich ist ein Knopf: sie springt zum ersten Tag mit diesem Problem und wählt den verantwortlichen Block aus. Auffällige Tage sind in Wochen- und Monatsansicht schraffiert und markiert.'],
+    hwDayScope:['Übertragen & Kalender','Beide beziehen sich auf den einen Tag, den du gerade siehst — deshalb gibt es sie nur in der Tagesansicht.'],
     startHint:'Startet die Uhr. Alles von hier bis zum Stopp wird erfasst.',
     tipSwitch:'Diesen Block beenden, direkt danach einen neuen starten',
     tipBreak:'Pause beginnen (Position „Pause“) — wird gebucht und zählt für die Pausenregel',
@@ -673,7 +689,9 @@ const I18N={
     qpHint:'↑/↓ bewegen · Enter wählen · 1–9 Kürzel · Esc abbrechen',
     scLabeling:'Schnelles Zuordnen', scAssign:'Position 1–9 zuweisen',
     scClearPos:'Position entfernen', scEditDesc:'Beschreibung bearbeiten',
-    scNextUn:'Nächster Block ohne Position', scNextBlock:'Nächster / vorheriger Block',
+    scPicker:'Schnellwahl', scQpMove:'Durch die Liste gehen', scQpTake:'Markierte Position übernehmen',
+    scQpHotkey:'Direkt auf eine Tastenbelegung springen', scQpFilter:'Tippen zum Filtern',
+    scNextUn:'Nächster Block ohne Position — läuft auch in spätere Tage weiter', scNextBlock:'Nächster / vorheriger Block',
     scQuickPick:'Positions-Schnellwahl öffnen', scCommitNext:'Übernehmen und zum nächsten offenen Block',
     hotkey:'Taste', unlabeledLeft:n=>`noch ${n} ohne Position`, allLabeled:'Alle Blöcke zugeordnet',
     factura:'Factura', internal:'Intern', billability:'Abrechnung', parentPos:'Gehört zu',
@@ -1177,6 +1195,15 @@ function renderHeader(){
   el('data-btn').textContent=t('btnSettings');
   el('ics-btn').textContent=t('btnCalendar');
   el('proj-btn').textContent=t('btnTransfer');
+  // Both act on exactly one day, so they are only offered where a single day is on screen.
+  // Nothing about them said so, and in month view the selected day is not even visible.
+  const dayOnly=viewMode==='day';
+  const dayName=d.toLocaleDateString(loc(),{weekday:'short',day:'2-digit',month:'short'});
+  [['ics-btn','ttCalendarDay'],['proj-btn','ttTransferDay']].forEach(([id,key])=>{
+    const b=el(id);
+    b.disabled=!dayOnly;
+    b.title=dayOnly?t(key,dayName):t('ttDayOnly');
+  });
   el('help-btn').title=t('scHintOpen');
   el('m-toggle').textContent = document.body.classList.contains('show-rail')?t('mTimeline'):t('mDetails');
 }
@@ -2327,9 +2354,15 @@ function shortcutGroups(){
       [t('scPasteLabel'), ['V']],
       [t('scCommitNext'), ['⌘↵']]
     ]],
+    [t('scPicker'), [
+      [t('scQpMove'),   ['↑','↓']],
+      [t('scQpTake'),   ['↵']],
+      [t('scQpHotkey'), ['1','9']],
+      [t('scQpFilter'), ['a–z']]
+    ]],
     [t('scBlock'), [
       [t('scMerge'),  ['M']],
-      [t('scDelete'), ['Del']]
+      [t('scDelete'), ['Del','⌫']]
     ]],
     [t('scExport'), [
       [t('scCopyCell'), ['↵']],
@@ -2342,7 +2375,7 @@ function openShortcuts(){
     <div class="sc-sec"><h4>${h}</h4>${rows.map(([lbl,keys])=>
       `<div class="sc-row"><span class="lbl">${lbl}</span><span class="sc-keys">${
         keys.map(k=>`<kbd>${k}</kbd>`).join('<span>/</span>')}</span></div>`).join('')}</div>`).join('');
-  const how=['hwStart','hwSwitch','hwBreak','hwStop','hwSessions'].map(k=>{
+  const how=['hwStart','hwSwitch','hwBreak','hwStop','hwSessions','hwWarnings','hwDayScope'].map(k=>{
     const [term,desc]=t(k);
     return `<div class="hw-row"><span class="hw-t">${term}</span><span class="hw-d">${desc}</span></div>`;
   }).join('');
@@ -2741,7 +2774,7 @@ function exportICS(){
   ics+='END:VCALENDAR\r\n';
   const name='projector-'+new Date(dayStartMs()).toISOString().slice(0,10)+'.ics';
   download(name,ics,'text/calendar');
-  toast(t('tCalExported'));
+  toast(t('tCalExported',new Date(dayStartMs()).toLocaleDateString(loc(),{weekday:'short',day:'2-digit',month:'short'})));
 }
 
 /* ============================ modal & file utils ============================ */

@@ -17,8 +17,8 @@ The name is the same joke as *Projectile* (project + suffix), minus the ordnance
 - Week view with a 7-day strip, hours per project, per-day totals and the Factura / Intern split
 - Month view: calendar grid with per-day hours and flags, plus month totals, per-week bars, leave tally and a completeness check
 - Days can be marked *Feiertag / Urlaub / Krank*, whole or half; a whole day drops out of the day, week and month targets, a half day halves them
-- Transfer to Projectile merges consecutive blocks into rows — optional, with a configurable separator between the merged descriptions — then walks you through cell by cell (paste → Tab → ↵)
-- Calendar export (`.ics`), JSON backup, German / English, themeable, installable to the home screen
+- Transfer to Projectile and the calendar export both act on **one day** — the one on screen — so they are offered in day view only; the transfer merges consecutive blocks into rows — optional, with a configurable separator between the merged descriptions — then walks you through cell by cell (paste → Tab → ↵)
+- Calendar export (`.ics`) of that day, JSON backup, German / English, themeable, installable to the home screen
 
 ## how to use it
 
