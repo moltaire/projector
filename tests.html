@@ -240,6 +240,43 @@ function run(){
     return eq(W.dayTargetMs(mondayMs()),0);
   });
 
+  H('stats');
+
+  test('statsFor splits work, pause and unlabeled',()=>{
+    store([[[9,0],[10,0],'dev','x'],[[10,0],[10,30],'pause'],
+           [[10,30],[11,30],null,''],[[11,30],[12,30],'hub','y']]);
+    const st=W.statsFor(blocks());
+    return eq([st.work/3600000,st.pause/3600000,st.unlabeled,st.count],[2,0.5,1,4]);
+  });
+
+  test('statsFor buckets unlabeled time under __un',()=>{
+    store([[[9,0],[10,0],null,''],[[10,0],[11,0],'dev','x']]);
+    const st=W.statsFor(blocks());
+    return eq([st.per.__un/3600000,st.per.dev/3600000],[1,1]);
+  });
+
+  test('statsFor counts Themenarbeit blocks missing a Hub',()=>{
+    store([[[9,0],[10,0],'solo','x'],[[10,0],[11,0],'solo','y',{wg:'HUB-A'}],
+           [[11,0],[12,0],'dev','z']]);
+    return eq(W.statsFor(blocks()).noWg,1);
+  });
+
+  test('sumStats adds the totals and merges per-position time',()=>{
+    store([]);
+    const a={per:{dev:60},work:60,pause:0,unlabeled:1,noWg:0,count:2};
+    const b={per:{dev:30,hub:90},work:120,pause:15,unlabeled:0,noWg:2,count:3};
+    const t=W.sumStats([a,b]);
+    return eq([t.per.dev,t.per.hub,t.work,t.pause,t.unlabeled,t.noWg,t.count],
+              [90,90,180,15,1,2,5]);
+  });
+
+  test('a week total equals the sum of its days',()=>{
+    store([[[9,0],[12,0],'dev','x'],[[12,0],[12,30],'pause'],[[12,30],[16,0],'hub','y']]);
+    const wk=W.weekStats(W.startOfWeek(new Date(mondayMs())));
+    const day=W.statsFor(blocks());
+    return eq([wk.work,wk.pause,wk.noWgCount],[day.work,day.pause,day.noWg]);
+  });
+
   H('billability');
 
   test('a work package inherits its project',()=>{

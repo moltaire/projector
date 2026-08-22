@@ -887,6 +887,32 @@ function weekTargetMs(ws){
   return weekdays ? full*expected/weekdays : 0;
 }
 function dayBlocks(){ return blocksOfDay(dayStartMs()); }
+/* --- one walk over a list of blocks ---
+   The day, week and month views all want the same five numbers, and used to each carry
+   their own copy of this loop — so every new figure (the Hub warning was the last one) had
+   to be added in three places, correctly, three times. `per` is minutes by position id,
+   with unlabeled time under '__un'. --- */
+function statsFor(blocks){
+  const per={}; let work=0, pause=0, unlabeled=0;
+  blocks.forEach(b=>{
+    const dur=bEnd(b)-b.start;
+    per[b.positionId||'__un']=(per[b.positionId||'__un']||0)+dur;
+    if(b.positionId===PAUSE()) pause+=dur;
+    else if(b.positionId) work+=dur;
+    else unlabeled++;                       // unlabeled time counts toward neither
+  });
+  return {per, work, pause, unlabeled, noWg:untaggedBlocks(blocks).length, count:blocks.length};
+}
+// Roll a run of daily stats into one total; `per` is summed key by key.
+function sumStats(list){
+  const out={per:{}, work:0, pause:0, unlabeled:0, noWg:0, count:0};
+  list.forEach(s=>{
+    out.work+=s.work; out.pause+=s.pause; out.unlabeled+=s.unlabeled;
+    out.noWg+=s.noWg; out.count+=s.count;
+    for(const k in s.per) out.per[k]=(out.per[k]||0)+s.per[k];
+  });
+  return out;
+}
 function runningBlock(){ return state.blocks.find(b=>b.end==null); }
 function posById(id){ return state.positions.find(p=>p.id===id); }
 function PAUSE(){ return 'pause'; }
@@ -1274,16 +1300,9 @@ function complianceOf(blocks){
 }
 function renderTotals(){
   const c=el('totals-card'); const blocks=dayBlocks();
-  const per={}; let work=0,pause=0;
-  blocks.forEach(b=>{
-    const dur=bEnd(b)-b.start;
-    const key=b.positionId||'__un';
-    per[key]=(per[key]||0)+dur;
-    if(b.positionId===PAUSE()) pause+=dur; else if(b.positionId) work+=dur; else work+=0;
-  });
-  const unlabeled=blocks.filter(b=>!b.positionId).length;
-  const noWg=untaggedBlocks(blocks).length;
-  let rows=Object.entries(per).sort((a,b)=>b[1]-a[1]).map(([k,v])=>{
+  const st=statsFor(blocks);
+  const {work, pause, unlabeled, noWg}=st;
+  let rows=Object.entries(st.per).sort((a,b)=>b[1]-a[1]).map(([k,v])=>{
     const p=posById(k); const sw=p?posColor(p):'var(--line)'; const lab=p?p.label:t('unlabeled');
     return `<div class="tline"><span><span class="sw" style="background:${sw}"></span>${esc(lab)}</span><span class="tabnum">${fmtDur(v)}</span></div>`;
   }).join('');
@@ -2173,22 +2192,14 @@ function openShortcuts(){
 
 /* ============================ week view ============================ */
 function weekStats(ws){
-  const days=[], per={}; let work=0, pause=0, unlabeledCount=0, noWgCount=0;
+  const days=[];
   for(let i=0;i<7;i++){
     const d=addDays(ws,i), dm=d.getTime(), bl=blocksOfDay(dm);
-    let w=0,p=0,uc=0;
-    bl.forEach(b=>{
-      const dur=bEnd(b)-b.start;
-      const key=b.positionId||'__un';
-      per[key]=(per[key]||0)+dur;
-      if(b.positionId===PAUSE()) p+=dur;
-      else if(b.positionId) w+=dur;
-      else uc++;
-    });
-    work+=w; pause+=p; unlabeledCount+=uc; noWgCount+=untaggedBlocks(bl).length;
-    days.push({date:d, ms:dm, work:w, pause:p, count:bl.length, compl:complianceOf(bl)});
+    days.push(Object.assign({date:d, ms:dm, compl:complianceOf(bl)}, statsFor(bl)));
   }
-  return {days, per, work, pause, unlabeledCount, noWgCount};
+  const tot=sumStats(days);
+  return {days, per:tot.per, work:tot.work, pause:tot.pause,
+          unlabeledCount:tot.unlabeled, noWgCount:tot.noWg};
 }
 function renderWeek(){
   const ws=startOfWeek(selectedDate), st=weekStats(ws), wv=el('weekview');
@@ -2309,28 +2320,24 @@ function positionBreakdownHtml(per,totalWork,emptyMsg){
 function monthStats(anchor){
   const first=new Date(anchor.getFullYear(),anchor.getMonth(),1);
   const last=new Date(anchor.getFullYear(),anchor.getMonth()+1,0);
-  const days=[], per={};
-  let work=0,pause=0,unlabeledCount=0,noWgCount=0,target=0,expected=0,weekdays=0,missing=0,viol=0;
+  const days=[];
+  let target=0, expected=0, weekdays=0, missing=0, viol=0;
   const leave={holiday:0,vacation:0,sick:0};
   for(let i=1;i<=last.getDate();i++){
     const d=new Date(anchor.getFullYear(),anchor.getMonth(),i), dm=d.getTime();
     const bl=blocksOfDay(dm);
-    let w=0,p=0,uc=0;
-    bl.forEach(b=>{
-      const dur=bEnd(b)-b.start, key=b.positionId||'__un';
-      per[key]=(per[key]||0)+dur;
-      if(b.positionId===PAUSE()) p+=dur; else if(b.positionId) w+=dur; else uc++;
-    });
     const ty=dayType(dm), compl=complianceOf(bl);
     if(ty) leave[ty]++;
     if(isWeekday(dm)) weekdays++;
     if(isExpected(dm)){ expected++; if(!bl.length) missing++; }
     if(compl.viol) viol++;
-    work+=w; pause+=p; unlabeledCount+=uc; noWgCount+=untaggedBlocks(bl).length; target+=dayTargetMs(dm);
-    days.push({date:d, ms:dm, work:w, pause:p, count:bl.length, type:ty, compl,
-               bill:splitBillable(bl)});
+    target+=dayTargetMs(dm);
+    days.push(Object.assign({date:d, ms:dm, type:ty, compl, bill:splitBillable(bl)}, statsFor(bl)));
   }
-  return {first,last,days,per,work,pause,unlabeledCount,noWgCount,target,expected,weekdays,missing,viol,leave};
+  const tot=sumStats(days);
+  return {first,last,days,per:tot.per,work:tot.work,pause:tot.pause,
+          unlabeledCount:tot.unlabeled,noWgCount:tot.noWg,
+          target,expected,weekdays,missing,viol,leave};
 }
 function renderMonth(){
   const st=monthStats(selectedDate), mv=el('monthview');
