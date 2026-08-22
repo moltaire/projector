@@ -313,6 +313,57 @@ function run(){
     return eq([W.dayFlagged(clean),W.dayFlagged(dirty)],[false,true]);
   });
 
+  H('half days');
+
+  test('a whole day off drops the target to zero',()=>{
+    store([],{targetHours:8});
+    W.setDayType(mondayMs(),'vacation',false);
+    return eq([W.dayTargetMs(mondayMs()),W.dayOff(mondayMs()),W.isExpected(mondayMs())],[0,1,false]);
+  });
+
+  test('a half day off halves the target and is still expected',()=>{
+    store([],{targetHours:8});
+    W.setDayType(mondayMs(),'vacation',true);
+    return eq([W.dayTargetMs(mondayMs())/3600000,W.dayOff(mondayMs()),W.isExpected(mondayMs())],
+              [4,0.5,true]);
+  });
+
+  test('a legacy bare string still reads as a whole day',()=>{
+    store([],{targetHours:8});
+    G.state.dayTypes[W.isoDate(mondayMs())]='sick';
+    return eq([W.dayType(mondayMs()),W.dayOff(mondayMs()),W.dayTargetMs(mondayMs())],['sick',1,0]);
+  });
+
+  test('clearing the type clears the fraction with it',()=>{
+    store([],{targetHours:8});
+    W.setDayType(mondayMs(),'sick',true);
+    W.setDayType(mondayMs(),null,true);
+    return eq([W.dayType(mondayMs()),W.dayOff(mondayMs()),W.dayTargetMs(mondayMs())/3600000],
+              [null,0,8]);
+  });
+
+  test('a half day takes half a day out of the weekly target',()=>{
+    store([],{weekTargetHours:40});
+    const ws=W.startOfWeek(new Date(mondayMs()));
+    const full=W.weekTargetMs(ws)/3600000;
+    W.setDayType(mondayMs(),'vacation',true);
+    const half=W.weekTargetMs(ws)/3600000;
+    W.setDayType(mondayMs(),'vacation',false);
+    return eq([full,half,W.weekTargetMs(ws)/3600000],[40,36,32]);
+  });
+
+  test('a half day off a weekend still owes nothing',()=>{
+    store([],{targetHours:8});
+    const sat=mondayMs()-2*86400000;
+    W.setDayType(sat,'vacation',true);
+    return eq(W.dayTargetMs(sat),0);
+  });
+
+  test('day tallies render halves in the local decimal mark',()=>{
+    store([]);
+    return eq([W.fmtDays(2),W.fmtDays(1.5),W.fmtDays(0.5)],['2','1,5','0,5']);
+  });
+
   H('billability');
 
   test('a work package inherits its project',()=>{

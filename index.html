@@ -196,6 +196,10 @@
   .dt-badge.vacation{background:rgba(244,186,64,.18); color:var(--break)}
   .dt-badge.sick{background:rgba(206,63,50,.18); color:var(--focus)}
   .dt-badge.lg{font-size:10.5px; padding:2px 7px; border-radius:var(--radius-pill); letter-spacing:.02em}
+  .dt-row{display:flex; align-items:center; gap:10px}
+  .dt-row select{flex:1; min-width:0}
+  .dt-row .chk{flex:0 0 auto; white-space:nowrap}
+  .dt-row .chk:has(input:disabled){opacity:.45}
   .mo-h{font-size:12.5px; font-variant-numeric:tabular-nums}
   .mo-split{height:3px; border-radius:2px; overflow:hidden; display:flex; background:var(--line)}
   .mo-split>i{display:block; height:100%}
@@ -501,10 +505,12 @@ const I18N={
     exportBackup:'Export backup (.json)', importBackup:'Import backup',
     firstRunHint:'Nothing tracked here yet. An installed app has its own storage — if your days live in the browser, restore them from a JSON backup.',
     dayTypeLabel:'Day type', dtWork:'Working day', dtWeekend:'Weekend',
+    halfDay:'½ day', halfDayHint:'Half the day off: the target drops by half instead of to zero.',
     dt_holiday:'Public holiday', dt_vacation:'Vacation', dt_sick:'Sick',
     dtShort_holiday:'PH', dtShort_vacation:'VAC', dtShort_sick:'SL',
     dayTypeBanner:'No target on this day.',
-    targetReduced:n=>`Target reduced by ${n} day${n>1?'s':''} off.`,
+    dayTypeBannerHalf:h=>`Half a day off — ${h} still expected.`,
+    targetReduced:n=>`Target reduced by ${n} day${n==='1'?'':'s'} off.`,
     viewMonth:'Month', month:'Month', monthTotal:'Month total',
     scToggleView3:'Cycle day / week / month view',
     leaveTally:'Days off', noDataMonth:'Nothing tracked this month.',
@@ -615,10 +621,12 @@ const I18N={
     exportBackup:'Sicherung exportieren (.json)', importBackup:'Sicherung importieren',
     firstRunHint:'Hier ist noch nichts erfasst. Eine installierte App hat einen eigenen Speicher — liegen deine Tage im Browser, hol sie über ein JSON-Backup zurück.',
     dayTypeLabel:'Tagestyp', dtWork:'Arbeitstag', dtWeekend:'Wochenende',
+    halfDay:'½ Tag', halfDayHint:'Halber Tag frei: das Soll halbiert sich, statt zu entfallen.',
     dt_holiday:'Feiertag', dt_vacation:'Urlaub', dt_sick:'Krank',
     dtShort_holiday:'FT', dtShort_vacation:'U', dtShort_sick:'K',
     dayTypeBanner:'Kein Soll an diesem Tag.',
-    targetReduced:n=>`Soll um ${n} freie${n>1?' Tage':'n Tag'} reduziert.`,
+    dayTypeBannerHalf:h=>`Halber Tag frei — ${h} bleiben Soll.`,
+    targetReduced:n=>`Soll um ${n==='1'?'einen freien Tag':n+' freie Tage'} reduziert.`,
     viewMonth:'Monat', month:'Monat', monthTotal:'Monatssumme',
     scToggleView3:'Tages-/Wochen-/Monatsansicht wechseln',
     leaveTally:'Freie Tage', noDataMonth:'Diesen Monat nichts erfasst.',
@@ -855,6 +863,11 @@ function parseHours(s){
   const v=parseFloat(s);
   return isFinite(v)&&v>=0 ? v : null;
 }
+// Day tallies are fractional now, so 1 stays "1" and 1.5 reads "1,5" in German.
+function fmtDays(n){
+  const v=Math.round(n*2)/2;
+  return v===Math.trunc(v) ? String(v) : v.toFixed(1).replace('.',lang==='de'?',':'.');
+}
 function fmtHours(h){
   const m=Math.round((+h||0)*60);
   return Math.floor(m/60)+':'+pad(m%60);
@@ -880,28 +893,47 @@ function blocksOfDay(dayMs){
    still count as worked, so an hour booked on a holiday reads as overtime, not as a hole. --- */
 const DAY_TYPES=['holiday','vacation','sick'];
 function isoDate(ms){ const d=new Date(ms); return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`; }
-function dayType(ms){ const v=(state.dayTypes||{})[isoDate(ms)]; return DAY_TYPES.includes(v)?v:null; }
-function setDayType(ms,v){
+/* A day off is stored as the bare type string for a whole day — the shape every store
+   written before half days used — or as {t,f} once a fraction is involved. Reading goes
+   through dayType/dayOff so no caller has to know which of the two it is looking at. */
+function dtEntry(ms){ return (state.dayTypes||{})[isoDate(ms)]; }
+function dayType(ms){
+  const v=dtEntry(ms);
+  const ty=(v&&typeof v==='object')?v.t:v;
+  return DAY_TYPES.includes(ty)?ty:null;
+}
+// How much of the day the absence takes: 0 when working, 0.5 for a half day, 1 for a whole.
+function dayOff(ms){
+  if(!dayType(ms)) return 0;
+  const v=dtEntry(ms);
+  return (v&&typeof v==='object'&&v.f>0&&v.f<1) ? v.f : 1;
+}
+function isHalfDay(ms){ const f=dayOff(ms); return f>0&&f<1; }
+function setDayType(ms,v,half){
   state.dayTypes=state.dayTypes||{};
-  if(v&&DAY_TYPES.includes(v)) state.dayTypes[isoDate(ms)]=v;
+  if(v&&DAY_TYPES.includes(v)) state.dayTypes[isoDate(ms)] = half ? {t:v,f:0.5} : v;
   else delete state.dayTypes[isoDate(ms)];
   save();
 }
 // Short chip for grids and strips; `full` spells the type out where there is room for it.
-function dtBadge(type,full){
+// `half` appends ½, so a half day is never mistaken for a whole one at a glance.
+function dtBadge(type,full,half){
   if(!type) return '';
-  return `<span class="dt-badge ${type}${full?' lg':''}" title="${esc(t('dt_'+type))}">${
-    full?esc(t('dt_'+type)):t('dtShort_'+type)}</span>`;
+  const name=esc(t('dt_'+type))+(half?' ½':'');
+  return `<span class="dt-badge ${type}${full?' lg':''}" title="${name}">${
+    (full?esc(t('dt_'+type)):t('dtShort_'+type))+(half?'½':'')}</span>`;
 }
 function isWeekday(ms){ const wd=new Date(ms).getDay(); return wd>=1&&wd<=5; }
-// A day is expected only when it is a weekday and not marked off.
-function isExpected(ms){ return isWeekday(ms)&&!dayType(ms); }
-function dayTargetMs(ms){ return isExpected(ms) ? (S().targetHours||0)*3600000 : 0; }
+// A day is expected whenever a weekday is not *entirely* off — half a day off still owes
+// half a day of work, and still counts as a day that should have something tracked on it.
+function isExpected(ms){ return isWeekday(ms)&&dayOff(ms)<1; }
+function dayTargetMs(ms){ return isWeekday(ms) ? (S().targetHours||0)*3600000*(1-dayOff(ms)) : 0; }
 // The weekly target is the contract figure, scaled by how much of the week is still expected.
 function weekTargetMs(ws){
   const full=(S().weekTargetHours||0)*3600000;
   let expected=0, weekdays=0;
-  for(let i=0;i<7;i++){ const dm=addDays(ws,i).getTime(); if(isWeekday(dm)){ weekdays++; if(isExpected(dm)) expected++; } }
+  // Fractional, so half a day off takes half a day out of the weekly figure too.
+  for(let i=0;i<7;i++){ const dm=addDays(ws,i).getTime(); if(isWeekday(dm)){ weekdays++; expected+=1-dayOff(dm); } }
   return weekdays ? full*expected/weekdays : 0;
 }
 function dayBlocks(){ return blocksOfDay(dayStartMs()); }
@@ -1110,7 +1142,10 @@ function render(){
 function renderDayBanner(){
   const b=el('day-banner'), ty=dayType(dayStartMs());
   b.hidden=!ty;
-  if(ty) b.innerHTML=`${dtBadge(ty,true)}<span class="lbl">${t('dayTypeBanner')}</span>`;
+  // A half day still owes half a target, so it must not claim there is none.
+  const half=isHalfDay(dayStartMs());
+  if(ty) b.innerHTML=`${dtBadge(ty,true,half)}<span class="lbl">${
+    half?t('dayTypeBannerHalf',fmtHours(dayTargetMs(dayStartMs())/3600000)):t('dayTypeBanner')}</span>`;
 }
 
 function renderHeader(){
@@ -1386,14 +1421,21 @@ function renderTotals(){
     <div class="ttot"><span>${t('work')}</span><span class="tabnum">${fmtDur(work)} / ${fmtHours(target)}</span></div>
     <div class="tline"><span class="dim">${t('breakRow')}</span><span class="tabnum dim">${fmtDur(pause)}</span></div>
     <div class="field" style="margin:10px 0 0"><label>${t('dayTypeLabel')}</label>
-      <select id="ed-daytype">
-        <option value=""${dt?'':' selected'}>${isWeekday(dm)?t('dtWork'):t('dtWeekend')}</option>
-        ${DAY_TYPES.map(v=>`<option value="${v}"${dt===v?' selected':''}>${t('dt_'+v)}</option>`).join('')}
-      </select></div>
+      <div class="dt-row">
+        <select id="ed-daytype">
+          <option value=""${dt?'':' selected'}>${isWeekday(dm)?t('dtWork'):t('dtWeekend')}</option>
+          ${DAY_TYPES.map(v=>`<option value="${v}"${dt===v?' selected':''}>${t('dt_'+v)}</option>`).join('')}
+        </select>
+        <label class="chk" title="${esc(t('halfDayHint'))}">
+          <input type="checkbox" id="ed-half" ${isHalfDay(dm)?'checked':''} ${dt?'':'disabled'}> ${t('halfDay')}
+        </label>
+      </div></div>
     ${unlabeled?issueBtn('unlabeled',dm,1,t('unlabeledWarn',unlabeled)):''}
     ${noWg?issueBtn('noWg',dm,1,t('noWgWarn',noWg)):''}
     ${compl}`;
-  el('ed-daytype').onchange=e=>{ setDayType(dm,e.target.value||null); render(); };
+  // The fraction only means anything once a type is chosen, so it follows the select.
+  el('ed-daytype').onchange=e=>{ setDayType(dm,e.target.value||null,el('ed-half').checked); render(); };
+  el('ed-half').onchange=e=>{ setDayType(dm,dayType(dm),e.target.checked); render(); };
 }
 
 // Factura vs Internal — the orthogonal axis, shown as one glanceable bar.
@@ -2296,7 +2338,7 @@ function renderWeek(){
        <div class="wk-dn">${names[i]}</div>
        <div class="wk-dt">${pad(d.date.getDate())}.${pad(d.date.getMonth()+1)}.</div>
        <div class="wk-dt" style="margin-top:2px">${d.work?fmtDur(d.work):'–'}</div>
-       <div class="wk-badge">${dtBadge(ty)}</div>
+       <div class="wk-badge">${dtBadge(ty,false,isHalfDay(d.ms))}</div>
      </div>`;}).join('')+`</div>`;
   let gut=`<div class="wk-gut">`;
   for(let hr=Math.ceil(minM/60); hr<=Math.floor(maxM/60); hr++)
@@ -2328,7 +2370,7 @@ function renderWeekRail(ws,st){
   const we=addDays(ws,6);
   const fmtD=d=>`${pad(d.getDate())}.${pad(d.getMonth()+1)}.`;
   const target=weekTargetMs(ws);                       // reduced by holidays / leave in this week
-  const off=st.days.filter(d=>dayType(d.ms)).length;
+  const off=st.days.reduce((n,d)=>n+dayOff(d.ms),0);   // fractional: a half day counts ½
   const diff=st.work-target, over=diff>=0;
   // summary
   el('now-card').innerHTML=`<h3>${t('week')} ${isoWeekNo(ws)}</h3>
@@ -2336,7 +2378,7 @@ function renderWeekRail(ws,st){
     <div class="elapsed tabnum">${fmtDur(st.work)}</div>
     <div class="dim tabnum">${t('weekTotal')} / ${fmtDur(target)} ·
       ${over?t('over'):t('under')} ${fmtDur(Math.abs(diff))}</div>
-    ${off?`<div class="dim" style="font-size:11.5px;margin-top:2px">${t('targetReduced',off)}</div>`:''}
+    ${off?`<div class="dim" style="font-size:11.5px;margin-top:2px">${t('targetReduced',fmtDays(off))}</div>`:''}
     <div class="bar" style="margin-top:10px"><i style="width:${Math.min(100,target?st.work/target*100:0)}%;background:var(--accent-bright)"></i></div>
     <div class="tline" style="margin-top:10px"><span class="dim">${t('breakRow')}</span><span class="tabnum dim">${fmtDur(st.pause)}</span></div>
     ${billSplitHtml(st.days.flatMap(d=>blocksOfDay(d.ms)))}
@@ -2408,7 +2450,7 @@ function monthStats(anchor){
     const d=new Date(anchor.getFullYear(),anchor.getMonth(),i), dm=d.getTime();
     const bl=blocksOfDay(dm);
     const ty=dayType(dm), compl=complianceOf(bl);
-    if(ty) leave[ty]++;
+    if(ty) leave[ty]+=dayOff(dm);       // half a day off is half a day of leave
     if(isWeekday(dm)) weekdays++;
     if(isExpected(dm)){ expected++; if(!bl.length) missing++; }
     if(compl.viol) viol++;
@@ -2436,7 +2478,7 @@ function renderMonth(){
          data-day="${dm}" title="${esc(d.toLocaleDateString(loc(),{weekday:'long',day:'numeric',month:'long'}))}">
       <div class="mo-top">
         <span class="mo-date">${d.getDate()}</span>
-        ${s&&s.type?dtBadge(s.type):''}
+        ${s&&s.type?dtBadge(s.type,false,isHalfDay(dm)):''}
       </div>
       <div class="mo-h tabnum">${s&&s.work?fmtDur(s.work):(inMonth?'<span class="dim">–</span>':'')}</div>
       ${bw?`<div class="mo-split"><i style="width:${s.bill.fact/bw*100}%;background:var(--accent-bright)"></i><i style="width:${s.bill.intern/bw*100}%;background:var(--intern)"></i></div>`:''}
@@ -2463,7 +2505,7 @@ function renderMonthRail(st){
     <div class="tline" style="margin-top:10px"><span class="dim">${t('breakRow')}</span><span class="tabnum dim">${fmtDur(st.pause)}</span></div>
     ${billSplitHtml(st.days.flatMap(d=>blocksOfDay(d.ms)))}
     ${offTotal?`<div class="tline"><span class="dim">${t('leaveTally')}</span><span class="tabnum dim">${
-      DAY_TYPES.filter(k=>st.leave[k]).map(k=>`${st.leave[k]} ${t('dt_'+k)}`).join(' · ')}</span></div>`:''}`;
+      DAY_TYPES.filter(k=>st.leave[k]).map(k=>`${fmtDays(st.leave[k])} ${t('dt_'+k)}`).join(' · ')}</span></div>`:''}`;
   // by position
   el('editor-card').hidden=false;
   el('editor-card').innerHTML=`<h3>${t('byPosition')}</h3>`+positionBreakdownHtml(st.per,st.work,t('noDataMonth'));
@@ -2754,7 +2796,8 @@ function demoData(){
     if(isWeekday(dm)) days.push(dm);
   }
   days.forEach((dm,i)=>{
-    const off={4:'vacation',9:'sick',12:'holiday'}[i];
+    // ...including one half day, so the fractional target has something to show.
+    const off={4:{t:'vacation',f:0.5},9:'sick',12:'holiday'}[i];
     if(off){ d.dayTypes[isoDate(dm)]=off; return; }           // a day off stays empty
     scripts[i%scripts.length].forEach(([from,to,pos,desc,tags])=>{
       const start=at(dm,from), end=at(dm,to);

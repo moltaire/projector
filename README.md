@@ -16,7 +16,7 @@ The name is the same joke as *Projectile* (project + suffix), minus the ordnance
 - Enforces the German break rule properly: 30 min *by* 6 h of work, 45 min by 9 h, in chunks of ≥15 min, checked chronologically
 - Week view with a 7-day strip, hours per project, per-day totals and the Factura / Intern split
 - Month view: calendar grid with per-day hours and flags, plus month totals, per-week bars, leave tally and a completeness check
-- Days can be marked *Feiertag / Urlaub / Krank*; they drop out of the day, week and month targets
+- Days can be marked *Feiertag / Urlaub / Krank*, whole or half; a whole day drops out of the day, week and month targets, a half day halves them
 - Transfer to Projectile merges consecutive blocks into rows — optional, with a configurable separator between the merged descriptions — then walks you through cell by cell (paste → Tab → ↵)
 - Calendar export (`.ics`), JSON backup, German / English, themeable, installable to the home screen
 
