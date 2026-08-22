@@ -68,7 +68,9 @@ merges are silent.
   "start": 1718607780000,   // epoch ms, local
   "end":   1718612100000,   // epoch ms; null while this is the running block
   "positionId": "pos_123",  // FK to Position; null = unlabeled (must resolve before export)
-  "description": "Reviewed PR #42"
+  "description": "Reviewed PR #42",
+  "wg": null,               // Themenarbeit only: Hub tag, null = take the row's own
+  "prj": null               // Themenarbeit only: PEG tag, null = take the row's own
 }
 ```
 - The **running block** is the one with `end === null`. At most one at a time. It visually
@@ -88,7 +90,9 @@ merges are silent.
   "reserved": false,        // true only for the built-in "Pause"
   "hotkey": 2,              // 1-9, unique, stable — the keyboard slot (§4.3)
   "parentId": "pos_099",    // null = top level (a project); set = a work package
-  "billable": null          // true | false | null = inherit from parent (§4.4a)
+  "billable": null,         // true | false | null = inherit from parent (§4.4a)
+  "tagged": false,          // true = Themenarbeit; sub-positions become Hub / PEG rows
+  "wg": null, "prj": null   // on a Hub / PEG row: the tags it gives every block booked on it
 }
 ```
 - **"Pause"** is a reserved, built-in position: cannot be deleted or renamed, has its own
@@ -104,6 +108,36 @@ merges are silent.
    non-billable package (rework, warranty, goodwill) — a single combined field can't express
    that. Unset at the root resolves to **internal**: under-claiming billable time is the safe
    direction. *Pause* is neither factura nor internal.
+
+**Themenarbeit (a third axis, opt-in per booking code).** Internal work is booked on a few
+broad codes, and the unit's own system reads the *description* to tell that work apart. It
+must arrive in a fixed shape:
+
+```
+<Hub> | <PEG or None> | free text
+```
+
+A position marked `tagged` is such a code. Its sub-positions then stop being booking codes
+of their own and become **Hub rows and PEG rows**: they book on the parent and contribute
+only the two tags. This is deliberate reuse rather than a parallel mechanism — a Hub row is
+an ordinary position, so hotkeys, quick-pick, colour inheritance and the week rollup all
+keep working, and the tag vocabulary *is* the tree instead of a second list to maintain.
+
+Because there is no third level to hang a PEG under its Hub, a **PEG row carries both tags**
+(`wg` *and* `prj`) as a flat sibling of the Hub row whose `wg` it repeats; the manager
+merely draws it indented. Blocks inherit both tags from their row and may override either,
+the same shape as colour and billability — so renaming a tag also fixes every block already
+booked on it. On export, both position columns resolve **upward** to the nearest real
+booking code, and two blocks merge into one row only when their tags agree as well, since a
+row states its tags exactly once.
+
+A Themenarbeit code with *no* sub-positions keeps the format and leaves both tags to be
+typed on the block — the escape hatch for work that has no standing Hub row yet.
+
+**Vocabulary.** `Themenarbeit`, `Hub` and `PEG` are the unit's own words, kept verbatim in
+both languages rather than translated. The word *project* was deliberately not reused for
+the second tag: it already names the hierarchy's top level and Projectile's own export
+column, and a third meaning made the positions manager unreadable.
 
 Work packages inherit a lighter shade of their project's colour, so a project reads as one
 visual family on the timeline.

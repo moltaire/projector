@@ -46,6 +46,11 @@
     #rail,#timeline-wrap{padding-bottom:env(safe-area-inset-bottom)}
   }
   .brand{font-weight:600; letter-spacing:-.2px; font-size:15px}
+  /* Loud on purpose: the demo store looks exactly like a real one from the timeline. */
+  .demo-badge{margin-left:7px; font-family:inherit; font-size:9.5px; font-weight:700;
+    letter-spacing:.1em; text-transform:uppercase; color:var(--on-accent);
+    background:var(--accent-bright); border:none; border-radius:999px; padding:2px 7px;
+    cursor:pointer; vertical-align:1px}
   .datenav{display:flex; align-items:center; gap:6px}
   .datenav .date{min-width:150px; text-align:center; font-weight:500}
   .toolbar{margin-left:auto; display:flex; gap:8px; align-items:center; flex-wrap:wrap}
@@ -130,6 +135,10 @@
      hiding it in a one-line viewport. Height is set from scrollHeight on every input. */
   .desc-wrap{position:relative}
   .desc-wrap textarea{display:block; resize:none; overflow:hidden; line-height:1.45; min-height:34px; max-height:40vh}
+  .taginp{font-variant-numeric:tabular-nums}
+  /* The composed Projectile cell, shown while typing so the machine-readable form is never
+     a surprise at export time. */
+  .tagprev{margin-top:5px; font-size:11.5px; color:var(--dim); word-break:break-word; min-height:1em}
   .sugg{position:absolute; left:0; right:0; top:100%; z-index:40; margin-top:2px;
     background:var(--card); border:1px solid var(--line); border-radius:var(--radius-sm);
     box-shadow:0 8px 22px rgba(0,0,0,.28); max-height:172px; overflow-y:auto}
@@ -155,7 +164,7 @@
   .modal h2{margin:0 0 14px; font-size:16px}
   .sub-h{font-size:11px; letter-spacing:.09em; text-transform:uppercase; color:var(--dim); margin:16px 0 8px}
   .modal.wide{width:min(820px,95vw)}
-  .ptable{display:grid; grid-template-columns:52px 92px minmax(140px,1fr) 124px 108px 58px 26px; gap:7px; align-items:center}
+  .ptable{display:grid; grid-template-columns:50px 122px minmax(118px,1fr) 108px 92px 108px 52px 24px; gap:7px; align-items:center}
   /* ---- month view ---- */
   #monthview{padding:14px 14px 40px 14px}
   .mo-head{display:grid; grid-template-columns:repeat(7,minmax(0,1fr)); gap:6px; margin-bottom:6px}
@@ -200,6 +209,18 @@
   .ptable input:disabled,.ptable select:disabled{opacity:.55}
   .lab-wrap{display:flex; align-items:center; gap:4px; min-width:0}
   .lab-wrap .kid{color:var(--dim); flex:0 0 auto; font-size:11px}
+  /* Hub and PEG rows read as a third level they do not actually have: a PEG row is
+     indented under the Hub row whose tag it repeats. */
+  .lab-wrap .kid.d2{padding-left:11px}
+  .tagcell{display:flex; align-items:center; justify-content:center; min-width:0; height:31px}
+  /* A Hub or PEG value sits in a column whose header names something else, so the field
+     carries its own label — the one thing the header cannot do per row. */
+  .tagfield{display:flex; align-items:center; gap:5px; min-width:0; width:100%}
+  .tagfield[hidden]{display:none}
+  .tagfield>span{flex:0 0 auto; font-size:9.5px; font-weight:600; letter-spacing:.06em;
+    text-transform:uppercase; color:var(--dim)}
+  .phint{font-size:11.5px; line-height:1.5; color:var(--dim); margin:10px 0 0}
+  .phint b{color:var(--text); font-weight:600}
   .ptable .mini{background:none; border:none; color:var(--dim); font-size:13px; padding:2px 4px; cursor:pointer}
   .ptable .mini:hover{color:var(--text)}
   .modal-actions{display:flex; justify-content:flex-end; gap:8px; margin-top:6px}
@@ -265,6 +286,7 @@
   .hw-d{color:var(--dim); line-height:1.45}
   @media (max-width:620px){ .hw-row{grid-template-columns:1fr; gap:2px} }
   label.chk{display:flex; align-items:center; gap:6px; font-size:12.5px; color:var(--text); cursor:pointer; user-select:none; margin:0}
+  label.chk[hidden]{display:none}
   .chk input[type=checkbox]{accent-color:var(--accent); width:13px; height:13px; margin:0; cursor:pointer}
   /* ---- quick pick + hotkey chips ---- */
   .qp-list{max-height:46vh; overflow:auto; margin-top:10px}
@@ -336,7 +358,7 @@
 </head>
 <body>
 <header>
-  <div class="brand">Projector</div>
+  <div class="brand">Projector<button class="demo-badge" id="demo-badge" hidden>Demo</button></div>
   <div class="datenav">
     <button class="btn icon" id="prev">‹</button>
     <span class="date" id="date-label"></span>
@@ -376,7 +398,10 @@
 <script>
 "use strict";
 /* ============================ state & storage ============================ */
-const KEY='projector-v1';
+// `?demo` runs the whole app against a *separate* storage key, so trying the sample data
+// can never reach, overwrite or migrate a real store.
+const DEMO=/[?&]demo\b/.test(location.search);
+const KEY=DEMO?'projector-demo-v1':'projector-v1';
 const PPM=1.5;                 // pixels per minute on the timeline
 const DAY=86400000;
 let state, selectedDate, selectedId=null, playhead=null, viewMode='day';
@@ -417,6 +442,19 @@ const I18N={
     mergeRows:'Merge consecutive blocks', mergeRowsHint:'One export row per run of same-position blocks instead of one per block.',
     descSep:'Description separator', descSepHint:'Placed between merged descriptions. A trailing period is dropped from every part but the last.',
     descSepPreview:(sep,ex)=>`Separator: <b>${sep}</b> → ${ex}`,
+    tagSep:'Tag separator', tagSepHint:'Between Hub, PEG and text on a Themenarbeit position.',
+    tagNoneW:'Empty PEG', tagNoneHint:'Written into the PEG slot when a block carries no PEG.',
+    tagPreview:ex=>`Preview: ${ex}`,
+    taggedCol:'Themenarbeit', taggedPos:'Themenarbeit',
+    taggedHint:'Descriptions on this position are written as “Hub | PEG | text”. Its sub-positions stop being booking codes of their own and become Hub and PEG rows, all booking on this code.',
+    posHint:'<b>Themenarbeit</b> marks a booking code whose description Projectile receives as <b>Hub | PEG | text</b>. Its sub-positions then become Hub and PEG rows: picking one fills both tags in. A code without sub-positions keeps the format and you type the two tags on the block.',
+    wgTag:'Hub', prjTag:'PEG', wgPh:'HUB',
+    noWgWarn:n=>`${n} Themenarbeit block${n>1?'s':''} without a Hub.`,
+    scTagTab:'Hub → PEG → description',
+    demoHint:'Sample data in its own storage — your real days are untouched. Click to reset it.',
+    demoReset:'Throw away the demo store and generate fresh sample data?',
+    tPresetNeedsWg:'A Hub or PEG row needs a Hub.',
+    tTaggedHasKids:'Its work packages are now Hub rows — give each one a Hub.',
     dataNote:'Everything lives in this browser. Back up regularly — clearing browsing data will erase it.',
     exportBackup:'Export backup (.json)', importBackup:'Import backup',
     firstRunHint:'Nothing tracked here yet. An installed app has its own storage — if your days live in the browser, restore them from a JSON backup.',
@@ -466,7 +504,7 @@ const I18N={
     scNextUn:'Next block without a position', scNextBlock:'Next / previous block',
     scQuickPick:'Open position quick-pick', scCommitNext:'Commit and jump to next unlabeled',
     hotkey:'Key', unlabeledLeft:n=>`${n} left without a position`, allLabeled:'All blocks labeled',
-    factura:'Factura', internal:'Internal', billability:'Billing', parentPos:'Project',
+    factura:'Factura', internal:'Internal', billability:'Billing', parentPos:'Belongs to',
     billInherit:'inherit', billYes:'Factura', billNo:'Internal',
     noParent:'— none —',
     colProject:'Project',
@@ -515,6 +553,19 @@ const I18N={
     mergeRows:'Aufeinanderfolgende Blöcke zusammenfassen', mergeRowsHint:'Eine Exportzeile je Folge gleicher Positionen statt je Block.',
     descSep:'Trennzeichen für Beschreibungen', descSepHint:'Steht zwischen zusammengefassten Beschreibungen. Bei allen Teilen außer dem letzten entfällt der Schlusspunkt.',
     descSepPreview:(sep,ex)=>`Trennzeichen: <b>${sep}</b> → ${ex}`,
+    tagSep:'Trennzeichen für Tags', tagSepHint:'Zwischen Hub, PEG und Text bei Themenarbeit-Positionen.',
+    tagNoneW:'Leeres PEG-Feld', tagNoneHint:'Steht im PEG-Feld, wenn ein Block keine PEG hat.',
+    tagPreview:ex=>`Vorschau: ${ex}`,
+    taggedCol:'Themenarbeit', taggedPos:'Themenarbeit',
+    taggedHint:'Die Beschreibung dieser Position wird als „Hub | PEG | Text“ geschrieben. Ihre Unterpositionen sind dann keine eigenen Buchungscodes mehr, sondern Hub- und PEG-Zeilen, die alle auf diesen Code buchen.',
+    posHint:'<b>Themenarbeit</b> markiert einen Buchungscode, dessen Beschreibung Projectile als <b>Hub | PEG | Text</b> bekommt. Seine Unterpositionen werden dann zu Hub- und PEG-Zeilen: eine davon auswählen füllt beide Tags. Ein Code ohne Unterpositionen behält das Format, die beiden Tags tippst du am Block.',
+    wgTag:'Hub', prjTag:'PEG', wgPh:'HUB',
+    noWgWarn:n=>`${n} Themenarbeit-${n>1?'Blöcke':'Block'} ohne Hub.`,
+    scTagTab:'Hub → PEG → Beschreibung',
+    demoHint:'Beispieldaten in eigenem Speicher — die echten Tage bleiben unberührt. Klicken setzt sie zurück.',
+    demoReset:'Demo-Speicher verwerfen und neue Beispieldaten erzeugen?',
+    tPresetNeedsWg:'Eine Hub- oder PEG-Zeile braucht einen Hub.',
+    tTaggedHasKids:'Die Arbeitspakete sind jetzt Hub-Zeilen — bitte je einen Hub eintragen.',
     dataNote:'Alle Daten liegen in diesem Browser. Sichere regelmäßig — beim Löschen der Browserdaten gehen sie verloren.',
     exportBackup:'Sicherung exportieren (.json)', importBackup:'Sicherung importieren',
     firstRunHint:'Hier ist noch nichts erfasst. Eine installierte App hat einen eigenen Speicher — liegen deine Tage im Browser, hol sie über ein JSON-Backup zurück.',
@@ -564,7 +615,7 @@ const I18N={
     scNextUn:'Nächster Block ohne Position', scNextBlock:'Nächster / vorheriger Block',
     scQuickPick:'Positions-Schnellwahl öffnen', scCommitNext:'Übernehmen und zum nächsten offenen Block',
     hotkey:'Taste', unlabeledLeft:n=>`noch ${n} ohne Position`, allLabeled:'Alle Blöcke zugeordnet',
-    factura:'Factura', internal:'Intern', billability:'Abrechnung', parentPos:'Projekt',
+    factura:'Factura', internal:'Intern', billability:'Abrechnung', parentPos:'Gehört zu',
     billInherit:'erben', billYes:'Factura', billNo:'Intern',
     noParent:'— keins —',
     colProject:'Projekt',
@@ -673,7 +724,9 @@ function defaults(){
       dateFmt:'dd.mm.yyyy', durFmt:'hm', weekTargetHours:40,
       snapLive:true,        // live start/switch/break/stop land on the grid, like every other edit
       mergeRows:true,       // collapse consecutive same-position blocks into one export row
-      descSep:'; '},        // ...and join their descriptions with this
+      descSep:'; ',         // ...and join their descriptions with this
+      // Themenarbeit descriptions, machine-readable: "<Hub> | <PEG> | text".
+      tagSep:' | ', tagNone:'None'},
     positions:[
       // Two levels: top-level entries are projects (containers); their children are the
       // bookable work packages. `billable` is inherited when null.
@@ -695,13 +748,13 @@ const LEGACY_KEY='projectile-buddy-v1';   // pre-rename store; migrate once, nev
 function load(){
   try{
     let raw=localStorage.getItem(KEY);
-    if(raw==null){
+    if(raw==null&&!DEMO){
       const old=localStorage.getItem(LEGACY_KEY);
       if(old!=null){ localStorage.setItem(KEY,old); raw=old; }   // keep the legacy copy as a safety net
     }
-    state=JSON.parse(raw)||defaults();
+    state=JSON.parse(raw)||(DEMO?demoData():defaults());
   }
-  catch(e){ state=defaults(); }
+  catch(e){ state=DEMO?demoData():defaults(); }
   if(!state.positions.some(p=>p.id==='pause')) state.positions.unshift(defaults().positions[0]);
   state.settings=Object.assign({},defaults().settings,state.settings||{});
   if(!state.dayTypes||typeof state.dayTypes!=='object') state.dayTypes={};
@@ -854,6 +907,46 @@ function chipLabel(p){
   const l=p.label||'';
   return l.length>14 ? l.slice(0,13)+'…' : l;
 }
+/* --- Themenarbeit: machine-readable descriptions ---
+   Some booking codes are typed into Projectile with a description the unit parses:
+       <Hub> | <PEG or None> | free text
+   A position marked `tagged` is such a code. Its sub-positions are then not booking codes
+   of their own but *Hub rows* and *PEG rows*: they book on the parent and only supply the
+   two tags. That keeps hotkeys, quick-pick, colours and the week rollup working untouched —
+   a Hub row is an ordinary position. A PEG row carries its Hub as well, because the third
+   level it would otherwise hang under does not exist. --- */
+function isTagged(p){ return !!p && p.tagged===true; }
+function isPreset(p){ return isTagged(projectOf(p)); }
+function isTaggedBlock(b){ const p=posById(b&&b.positionId); return isTagged(p)||isPreset(p); }
+// The code Projectile actually books: the work package itself, or, for a Hub / PEG row,
+// the Themenarbeit parent it hangs under.
+function bookingCodeOf(p){ return isPreset(p) ? projectOf(p) : p; }
+function presetOf(b){ const p=posById(b&&b.positionId); return isPreset(p)?p:null; }
+// Tags inherit from the Hub / PEG row and are overridable per block — the same shape as
+// colour and billability, so renaming a row's tag also fixes every block booked on it.
+function effTag(b,f){
+  const v=b&&b[f]; if(v!=null&&v!=='') return v;
+  const pr=presetOf(b); return (pr&&pr[f])||'';
+}
+function tagSep(){ const s=S().tagSep; return s==null?' | ':s; }
+function tagNone(){ const s=S().tagNone; return s==null?'None':s; }
+function tagParts(wg,prj,text){
+  return [(wg||'').trim(), (prj||'').trim()||tagNone(), text].join(tagSep());
+}
+// The separator has to survive the round trip into a single Projectile cell, so it can
+// never appear inside a tag itself.
+function cleanTag(v){ const sep=tagSep().trim()||'|'; return String(v||'').split(sep).join('').trim(); }
+// Every place that shows or exports a description goes through here, so the timeline, the
+// calendar file and the Projectile cell cannot drift apart.
+function composedDesc(b){
+  const d=(b.description||'').trim();
+  if(!isTaggedBlock(b)) return d;
+  return tagParts(effTag(b,'wg'),effTag(b,'prj'),d);
+}
+// A Themenarbeit block without a Hub exports a leading empty field — worth a warning, but
+// not worth blocking the export the way a missing position does.
+function untaggedBlocks(blocks){ return blocks.filter(b=>isTaggedBlock(b)&&!effTag(b,'wg')); }
+
 function isBillable(p){
   if(!p||p.reserved) return false;               // Pause is neither factura nor internal
   if(p.billable!=null) return !!p.billable;
@@ -979,9 +1072,10 @@ function renderTimeline(){
     const nextAbut=i<blocks.length-1 && Math.abs(b.end-blocks[i+1].start)<1000;
     const rzTop=(!prevAbut && ht>=24)?'<div class="rz rz-top"></div>':'';
     const rzBot=(!nextAbut && b.end!=null && ht>=24)?'<div class="rz rz-bot"></div>':'';
+    const bd=composedDesc(b);      // tagged blocks show the cell they will export, verbatim
     h+=`<div class="${cls}" data-id="${b.id}" style="${style}">${rzTop}
           <div class="bt">${p?splitLabelHtml(p):esc(t('unlabeled'))}</div>
-          <div class="bm tabnum">${fmtHM(b.start)}–${b.end==null?t('nowWord'):fmtHM(b.end)} · ${fmtDur(bEnd(b)-b.start)}${b.description?' · '+esc(b.description):''}</div>${rzBot}</div>`;
+          <div class="bm tabnum">${fmtHM(b.start)}–${b.end==null?t('nowWord'):fmtHM(b.end)} · ${fmtDur(bEnd(b)-b.start)}${bd?' · '+esc(bd):''}</div>${rzBot}</div>`;
   });
   for(let i=0;i<blocks.length-1;i++){
     const a=blocks[i], c=blocks[i+1];
@@ -1012,11 +1106,13 @@ function renderNow(){
   if(run){
     c.innerHTML=`<h3>${t('nowTracking')}</h3>
       <div class="field"><label>${t('position')}</label><select id="now-pos">${posOptions(run.positionId)}</select></div>
+      ${tagFieldsHtml(run,'now')}
       <div class="field"><label>${t('description')}</label>
         <div class="desc-wrap">
           <textarea id="now-desc" rows="1" spellcheck="false" placeholder="${t('descPh')}">${esc(run.description||'')}</textarea>
           <div class="sugg" id="now-sugg" hidden></div>
-        </div></div>
+        </div>
+        ${isTaggedBlock(run)?`<div class="tagprev tabnum" id="now-prev"></div>`:''}</div>
       <div class="elapsed tabnum" id="now-elapsed">${fmtDur(now()-run.start)}</div>
       <div class="dim tabnum">${t('since',fmtHM(run.start))}</div>
       <div class="nowbtns">
@@ -1025,10 +1121,14 @@ function renderNow(){
         <button class="btn outline" id="btn-stop" title="${t('tipStop')}">${t('stop')}</button>
       </div>
       <div class="hint" style="margin-top:8px"><a href="#" id="now-help" style="color:var(--accent-bright)">${t('help')}</a></div>`;
-    el('now-pos').onchange=e=>{ run.positionId=e.target.value||null; save(); renderTimeline(); renderTotals(); };
+    // The position drives which fields exist, so a change has to rebuild the panel.
+    el('now-pos').onchange=e=>{ run.positionId=e.target.value||null; save(); render(); };
     const nta=el('now-desc');
     growDesc(nta); closeSugg();
-    nta.oninput=e=>{ run.description=e.target.value; growDesc(e.target); openSugg(el('now-sugg'),e.target.value,v=>{ run.description=v; nta.value=v; growDesc(nta); save(); renderTimeline(); }); save(); renderTimeline(); };
+    const nPrev=wireTagFields(run,'now',()=>{ renderTimeline(); renderTotals(); });
+    nta.oninput=e=>{ run.description=e.target.value; growDesc(e.target); nPrev();
+      openSugg(el('now-sugg'),e.target.value,v=>{ run.description=v; nta.value=v; growDesc(nta); nPrev(); save(); renderTimeline(); });
+      save(); renderTimeline(); };
     nta.onblur=()=>setTimeout(closeSugg,120);
     nta.onkeydown=e=>{ if(suggKey(e)) return;
       if(e.key==='Enter'||e.key==='Escape'){ e.preventDefault(); closeSugg(); e.target.blur(); } };
@@ -1071,11 +1171,13 @@ function renderEditor(){
     <div class="prog-lbl">${un?t('unlabeledLeft',un):t('allLabeled')}</div>
     <div class="hk-wrap">${chips}</div>
     <div class="field"><label>${t('position')}</label><select id="ed-pos">${posOptions(b.positionId)}</select></div>
+    ${tagFieldsHtml(b,'ed')}
     <div class="field"><label>${t('description')}</label>
       <div class="desc-wrap">
         <textarea id="ed-desc" rows="1" spellcheck="false">${esc(b.description||'')}</textarea>
         <div class="sugg" id="ed-sugg" hidden></div>
-      </div></div>
+      </div>
+      ${isTaggedBlock(b)?`<div class="tagprev tabnum" id="ed-prev"></div>`:''}</div>
     <div class="row">
       <div class="field"><label>${t('start')}</label><input type="text" id="ed-start" inputmode="numeric" placeholder="HH:MM" value="${fmtHM(b.start)}"></div>
       <div class="field"><label>${t('end')}</label>${running?`<input type="text" value="${t('nowWord')}" disabled>`:`<input type="text" id="ed-end" inputmode="numeric" placeholder="HH:MM" value="${fmtHM(b.end)}">`}</div>
@@ -1086,10 +1188,14 @@ function renderEditor(){
       <button class="btn outline" id="ed-del">${t('del')} ${TRASH}</button>
     </div>
     <div class="hint">${t('editorHint')}</div>`;
-  el('ed-pos').onchange=e=>{ b.positionId=e.target.value||null; save(); renderTimeline(); renderTotals(); };
+  // A Themenarbeit position brings its own fields along, so switching rebuilds the card.
+  el('ed-pos').onchange=e=>{ b.positionId=e.target.value||null; save(); render(); };
   const ta=el('ed-desc');
   growDesc(ta); closeSugg();
-  ta.oninput=e=>{ b.description=e.target.value; growDesc(e.target); openSugg(el('ed-sugg'),e.target.value,v=>{ b.description=v; ta.value=v; growDesc(ta); save(); renderTimeline(); }); save(); renderTimeline(); };
+  const paintPrev=wireTagFields(b,'ed',()=>{ renderTimeline(); renderTotals(); });
+  ta.oninput=e=>{ b.description=e.target.value; growDesc(e.target); paintPrev();
+    openSugg(el('ed-sugg'),e.target.value,v=>{ b.description=v; ta.value=v; growDesc(ta); paintPrev(); save(); renderTimeline(); });
+    save(); renderTimeline(); };
   c.querySelectorAll('[data-hk]').forEach(n=>n.onclick=()=>{
     b.positionId=n.dataset.hk; save(); render();
   });
@@ -1101,7 +1207,12 @@ function renderEditor(){
       e.preventDefault(); closeSugg(); e.target.blur();
       if(e.metaKey||e.altKey||e.ctrlKey) gotoNextUnlabeled();     // commit + next open block
     } else if(e.key==='Escape'){ e.preventDefault(); closeSugg(); e.target.blur(); }
-    else if(e.key==='Tab'){ e.preventDefault(); closeSugg(); e.target.blur(); gotoBlock(e.shiftKey?-1:1); }
+    else if(e.key==='Tab'){
+      e.preventDefault(); closeSugg();
+      const back=e.shiftKey&&el('ed-prj');
+      if(back){ back.focus(); back.select(); return; }
+      e.target.blur(); gotoBlock(e.shiftKey?-1:1);
+    }
   };
   el('ed-start').onchange=e=>{ const v=parseHMok(e.target.value); if(v==null){ renderEditor(); return; } setStart(b,v); };
   if(!running) el('ed-end').onchange=e=>{ const v=parseHMok(e.target.value); if(v==null){ renderEditor(); return; } setEnd(b,v); };
@@ -1137,6 +1248,7 @@ function renderTotals(){
     if(b.positionId===PAUSE()) pause+=dur; else if(b.positionId) work+=dur; else work+=0;
   });
   const unlabeled=blocks.filter(b=>!b.positionId).length;
+  const noWg=untaggedBlocks(blocks).length;
   let rows=Object.entries(per).sort((a,b)=>b[1]-a[1]).map(([k,v])=>{
     const p=posById(k); const sw=p?posColor(p):'var(--line)'; const lab=p?p.label:t('unlabeled');
     return `<div class="tline"><span><span class="sw" style="background:${sw}"></span>${esc(lab)}</span><span class="tabnum">${fmtDur(v)}</span></div>`;
@@ -1166,6 +1278,7 @@ function renderTotals(){
         ${DAY_TYPES.map(v=>`<option value="${v}"${dt===v?' selected':''}>${t('dt_'+v)}</option>`).join('')}
       </select></div>
     ${unlabeled?`<div class="compl warn">${t('unlabeledWarn',unlabeled)}</div>`:''}
+    ${noWg?`<div class="compl warn">${t('noWgWarn',noWg)}</div>`:''}
     ${compl}`;
   el('ed-daytype').onchange=e=>{ setDayType(dm,e.target.value||null); render(); };
 }
@@ -1199,13 +1312,21 @@ function descPool(){
 }
 function growDesc(ta){ if(!ta) return; ta.style.height='auto'; ta.style.height=ta.scrollHeight+'px'; }
 function closeSugg(){ if(suggBoxEl){ suggBoxEl.hidden=true; suggBoxEl.innerHTML=''; } suggBoxEl=null; suggAccept=null; suggItems=[]; suggI=-1; }
-function openSugg(box,q,accept){
+// `opts.pool` swaps the candidate list (the tag fields feed their own), `opts.all` opens
+// the list on an empty field — right for a short tag vocabulary, wrong for free text.
+function openSugg(box,q,accept,opts){
   if(!box) return;
+  opts=opts||{};
+  const max=opts.max||6;
   q=(q||'').trim().toLowerCase();
-  if(!q){ closeSugg(); return; }
-  const pool=descPool().filter(d=>d.toLowerCase()!==q);
-  const pre=pool.filter(d=>d.toLowerCase().startsWith(q));
-  suggItems=pre.concat(pool.filter(d=>!d.toLowerCase().startsWith(q)&&d.toLowerCase().includes(q))).slice(0,6);
+  const pool=(opts.pool||descPool)().filter(d=>d.toLowerCase()!==q);
+  if(!q){
+    if(!opts.all){ closeSugg(); return; }
+    suggItems=pool.slice(0,max);
+  } else {
+    const pre=pool.filter(d=>d.toLowerCase().startsWith(q));
+    suggItems=pre.concat(pool.filter(d=>!d.toLowerCase().startsWith(q)&&d.toLowerCase().includes(q))).slice(0,max);
+  }
   if(!suggItems.length){ closeSugg(); return; }
   suggI=-1; suggBoxEl=box; suggAccept=accept;
   box.innerHTML=suggItems.map((d,i)=>`<div data-s="${i}">${esc(d)}</div>`).join('');
@@ -1227,7 +1348,7 @@ function paintSugg(){
 }
 function suggPick(i){
   const v=suggItems[i]; if(v==null) return;
-  const ta=suggBoxEl&&suggBoxEl.parentNode.querySelector('textarea');
+  const ta=suggBoxEl&&suggBoxEl.parentNode.querySelector('textarea,input');
   if(suggAccept) suggAccept(v);
   closeSugg();
   if(ta) ta.focus();
@@ -1241,6 +1362,70 @@ function suggKey(e){
   if((e.key==='Enter'||e.key==='Tab')&&suggI>=0){ e.preventDefault(); suggPick(suggI); return true; }
   if(e.key==='Escape'){ e.preventDefault(); closeSugg(); return true; }
   return false;
+}
+
+/* --- tag recall ---
+   The curated vocabulary is the tree itself: the Hub and PEG rows under a booking code are
+   the tags the unit hands out. Anything typed ad hoc is picked up from history behind it,
+   so a PEG that appears mid-day needs no bookkeeping first. PEGs are narrowed to the Hub in
+   the field above, since that pairing is what the rows encode. --- */
+function tagPool(f,b){
+  const bc=bookingCodeOf(posById(b&&b.positionId));
+  const wg=f==='prj' ? effTag(b,'wg') : '';
+  const seen=new Set(), out=[];
+  const push=v=>{ v=(v||'').trim(); if(v&&!seen.has(v)){ seen.add(v); out.push(v); } };
+  if(bc) state.positions.filter(x=>x.parentId===bc.id&&!x.archived)
+    .filter(x=>f==='wg'||!wg||!x.wg||x.wg===wg)
+    .forEach(x=>push(x[f]));
+  for(let i=state.blocks.length-1;i>=0;i--){          // newest first, as with descriptions
+    const ob=state.blocks[i];
+    if(!ob[f]) continue;
+    if(f==='prj'&&wg&&effTag(ob,'wg')!==wg) continue;
+    push(ob[f]);
+  }
+  return out;
+}
+// The two tag fields, shown only on a Themenarbeit position. Both are prefilled from the
+// Hub or PEG row, so a PEG row leaves nothing but the text to type.
+function tagFieldsHtml(b,pre){
+  if(!isTaggedBlock(b)) return '';
+  const f=(k,lab,ph)=>`<div class="field"><label>${lab}</label>
+      <div class="desc-wrap">
+        <input type="text" id="${pre}-${k}" class="taginp" spellcheck="false" autocomplete="off"
+               placeholder="${ph}" value="${esc(effTag(b,k))}">
+        <div class="sugg" id="${pre}-${k}s" hidden></div>
+      </div></div>`;
+  return `<div class="row">${f('wg',t('wgTag'),t('wgPh'))}${f('prj',t('prjTag'),esc(tagNone()))}</div>`;
+}
+// Wires both fields and keeps the composed-cell preview under the description live.
+function wireTagFields(b,pre,after){
+  const prev=el(pre+'-prev');
+  const paint=()=>{ if(prev) prev.textContent=composedDesc(b); };
+  paint();
+  if(!isTaggedBlock(b)) return paint;
+  ['wg','prj'].forEach(k=>{
+    const inp=el(pre+'-'+k); if(!inp) return;
+    const box=el(pre+'-'+k+'s');
+    const opts={pool:()=>tagPool(k,b),all:true,max:8};
+    const set=v=>{ b[k]=cleanTag(v); save(); paint(); after(); };
+    // Focusing a tag field almost always means changing it, so the whole (short) vocabulary
+    // opens — filtering by the value already in the box would hide every alternative.
+    inp.onfocus=()=>openSugg(box,'',v=>{ inp.value=v; set(v); },opts);
+    inp.oninput=e=>{ set(e.target.value); openSugg(box,e.target.value,v=>{ inp.value=v; set(v); },opts); };
+    inp.onblur=()=>setTimeout(closeSugg,120);
+    inp.onkeydown=e=>{
+      if(suggKey(e)) return;
+      // Tab walks Hub → PEG → description; leaving the description still leaves
+      // the block, so the end of the chain behaves exactly as before.
+      if(e.key==='Enter'||e.key==='Tab'){
+        e.preventDefault(); closeSugg();
+        const nxt=e.shiftKey ? (k==='prj'?el(pre+'-wg'):null)
+                             : (k==='wg'?el(pre+'-prj'):el(pre+'-desc'));
+        if(nxt){ nxt.focus(); nxt.select&&nxt.select(); } else inp.blur();
+      } else if(e.key==='Escape'){ e.preventDefault(); closeSugg(); inp.blur(); }
+    };
+  });
+  return paint;
 }
 
 /* ============================ live loop actions ============================ */
@@ -1292,13 +1477,15 @@ function cutBlockAt(id,ms){
   const b=state.blocks.find(x=>x.id===id); if(!b)return;
   ms=snapMs(ms); const min=S().snapMin*60000;
   if(ms<=b.start+min || ms>=bEnd(b)-min){ toast(t('tTooSmall')); return; }
-  const oldEnd=b.end; const nb={id:uid('b'),start:ms,end:oldEnd,positionId:b.positionId,description:b.description};
+  const oldEnd=b.end;
+  const nb={id:uid('b'),start:ms,end:oldEnd,positionId:b.positionId,description:b.description,wg:b.wg,prj:b.prj};
   b.end=ms; state.blocks.push(nb); selectedId=nb.id; save(); render();
 }
 function mergeSeam(i){
   const bl=dayBlocks(); const a=bl[i], c=bl[i+1]; if(!a||!c)return;
   const aLong=(bEnd(a)-a.start)>=(bEnd(c)-c.start); const keep=aLong?a:c;
   a.positionId=keep.positionId; a.description=keep.description; a.end=c.end;
+  a.wg=keep.wg; a.prj=keep.prj;
   state.blocks=state.blocks.filter(x=>x.id!==c.id); selectedId=a.id; save(); render();
   toast(t('tMerged', posById(keep.positionId)?.label||t('unlabeled')));
 }
@@ -1490,16 +1677,21 @@ function openPositions(){
   const parents=state.positions.filter(p=>!p.parentId&&!p.reserved&&!p.archived);
   const hkOpts=p=>[1,2,3,4,5,6,7,8,9].map(n=>`<option value="${n}"${p.hotkey===n?' selected':''}>${n}</option>`).join('');
 
-  const rowFor=p=>{
+  const rowFor=(p,depth)=>{
     const container=!isBookable(p), bill=isBillable(p), inh=!!p.parentId&&!p.color;
+    const preset=isPreset(p);
     return `<div class="prow${p.archived?' arch':''}" data-p="${p.id}">
       ${container
         ? `<span class="dim" style="text-align:center;font-size:11px">–</span>`
         : `<select data-f="hotkey" title="${t('hotkey')}">
              <option value=""${p.hotkey?'':' selected'}>–</option>${hkOpts(p)}
            </select>`}
-      <input type="text" value="${esc(p.code)}" data-f="code" ${p.reserved?'disabled':''}>
-      <div class="lab-wrap">${p.parentId?'<span class="kid">└</span>':''}
+      ${preset
+        ? `<div class="tagfield"><span>${t('wgTag')}</span>
+             <input type="text" class="taginp" value="${esc(p.wg||'')}" data-f="wg"
+                    placeholder="${t('wgPh')}" title="${t('wgTag')}"></div>`
+        : `<input type="text" value="${esc(p.code)}" data-f="code" ${p.reserved?'disabled':''}>`}
+      <div class="lab-wrap">${p.parentId?`<span class="kid${depth>1?' d2':''}">└</span>`:''}
         <input type="text" value="${esc(p.label)}" data-f="label" ${p.reserved?'disabled':''}></div>
       ${p.reserved?'<span></span>':`<select data-f="parentId" title="${t('parentPos')}">
         <option value=""${p.parentId?'':' selected'}>${t('noParent')}</option>
@@ -1510,6 +1702,14 @@ function openPositions(){
         <option value="1"${p.billable===true?' selected':''}>${t('billYes')}</option>
         <option value="0"${p.billable===false?' selected':''}>${t('billNo')}</option>
       </select>`}
+      <div class="tagcell">${
+        preset ? `<div class="tagfield"><span>${t('prjTag')}</span>
+                    <input type="text" class="taginp" value="${esc(p.prj||'')}" data-f="prj"
+                           placeholder="${esc(tagNone())}" title="${t('prjTag')}"></div>`
+        : p.reserved ? ''
+        : `<label class="chk" title="${t('taggedPos')} — ${t('taggedHint')}">
+             <input type="checkbox" data-f="tagged" ${p.tagged?'checked':''}>
+           </label>`}</div>
       <div class="colcell">
         <input type="color" class="${inh?'inh':''}" value="${posColor(p)}" data-f="color"
                title="${inh?t('colorInherited'):''}" ${p.reserved?'disabled':''}>
@@ -1521,10 +1721,22 @@ function openPositions(){
     </div>`;
   };
 
+  // Under a Themenarbeit code the rows are laid out as the third level they only look
+  // like: the Hub row, then every PEG row repeating that Hub, indented.
+  const orderKids=(par,kids)=>{
+    if(!isTagged(par)) return kids.map(k=>[k,1]);
+    const out=[], used=new Set();
+    kids.filter(k=>!k.prj).forEach(w=>{
+      out.push([w,1]); used.add(w.id);
+      kids.filter(k=>k.prj&&(k.wg||'')===(w.wg||'')).forEach(k=>{ out.push([k,2]); used.add(k.id); });
+    });
+    kids.filter(k=>!used.has(k.id)).forEach(k=>out.push([k,1]));
+    return out;
+  };
   let rows='';
   state.positions.filter(p=>!p.parentId&&vis(p)).forEach(p=>{
-    rows+=rowFor(p);
-    kidsOf(p.id).filter(vis).forEach(c=>{ rows+=rowFor(c); });
+    rows+=rowFor(p,0);
+    orderKids(p,kidsOf(p.id).filter(vis)).forEach(([c,d])=>{ rows+=rowFor(c,d); });
   });
 
   openModal(`<h2>${t('positions')}</h2>
@@ -1534,9 +1746,11 @@ function openPositions(){
       <div class="ph">${t('labelPh')}</div>
       <div class="ph">${t('parentPos')}</div>
       <div class="ph">${t('billability')}</div>
+      <div class="ph" style="text-align:center">${t('taggedCol')}</div>
       <div class="ph"></div><div class="ph"></div>
       ${rows}
     </div>
+    <p class="phint">${t('posHint')}</p>
     <h3 class="sub-h">${t('addPosition')}</h3>
     <div class="ptable add">
       <span></span>
@@ -1544,9 +1758,15 @@ function openPositions(){
       <input type="text" id="np-label" placeholder="${t('labelPh')}">
       <select id="np-parent">
         <option value="">${t('noParent')}</option>
-        ${parents.map(x=>`<option value="${x.id}">${esc(x.label)}</option>`).join('')}
+        ${parents.map(x=>`<option value="${x.id}"${isTagged(x)?' data-tagged="1"':''}>${esc(x.label)}</option>`).join('')}
       </select>
       <span></span>
+      <div class="tagcell">
+        <label class="chk" id="np-tagwrap" title="${t('taggedPos')} — ${t('taggedHint')}">
+          <input type="checkbox" id="np-tagged"></label>
+        <div class="tagfield" id="np-prjwrap" hidden><span>${t('prjTag')}</span>
+          <input type="text" class="taginp" id="np-prj" placeholder="${esc(tagNone())}" title="${t('prjTag')}"></div>
+      </div>
       <input type="color" id="np-color" value="#5e7ce0">
       <span></span>
     </div>
@@ -1579,6 +1799,19 @@ function openPositions(){
         p.billable = e.target.value===''?null : e.target.value==='1';
         save(); openPositions(); render(); return;
       }
+      if(f==='tagged'){
+        p.tagged=e.target.checked;
+        const kids=kidsOf(p.id);
+        // Its packages stop being booking codes of their own. Their old code is the best
+        // first guess at a Hub, and it lands in the very column it replaces.
+        if(p.tagged&&kids.length){
+          kids.forEach(k=>{ if(!k.wg&&k.code) k.wg=cleanTag(k.code); });
+          toast(t('tTaggedHasKids'));
+        }
+        save(); openPositions(); render(); return;
+      }
+      // Grouping and indentation follow the tags, so the table is redrawn on a change.
+      if(f==='wg'||f==='prj'){ p[f]=cleanTag(e.target.value); save(); openPositions(); render(); return; }
       p[f]=e.target.value; save(); render();
     });
     const del=row.querySelector('[data-act=del]');
@@ -1598,14 +1831,31 @@ function openPositions(){
     if(uc) uc.onclick=()=>{ p.color=null; save(); openPositions(); render(); };
   });
 
+  // Under a Themenarbeit code the first column is the Hub, not a code — so the add row
+  // relabels itself as soon as such a parent is chosen.
+  const npSync=()=>{
+    const par=posById(el('np-parent').value);
+    const tag=isTagged(par);
+    el('np-code').placeholder = tag ? t('wgPh') : t('codePh');
+    el('np-code').title = tag ? t('wgTag') : '';
+    el('np-prjwrap').hidden = !tag;
+    el('np-tagwrap').hidden = tag;
+  };
+  el('np-parent').onchange=npSync; npSync();
   el('np-add').onclick=()=>{
     const code=el('np-code').value.trim(), label=el('np-label').value.trim();
     if(!label){ toast(t('tLabelReq')); return; }
     const parentId=el('np-parent').value||null;
     const par=parentId?posById(parentId):null;
     const color=par?null:el('np-color').value;   // a package inherits its project's colour
-    state.positions.push({id:uid('p'),code:code||label.toUpperCase().slice(0,8),label,color,
-      archived:false,parentId,billable:null});
+    const np={id:uid('p'),code:code||label.toUpperCase().slice(0,8),label,color,
+      archived:false,parentId,billable:null};
+    if(isTagged(par)){
+      const wg=cleanTag(code);
+      if(!wg){ toast(t('tPresetNeedsWg')); return; }
+      np.code=''; np.wg=wg; np.prj=cleanTag(el('np-prj').value);
+    } else if(el('np-tagged').checked){ np.tagged=true; }
+    state.positions.push(np);
     if(par) par.hotkey=null;            // a project that gains a package stops being bookable
     ensureHotkeys(); save(); openPositions(); render();
   };
@@ -1666,6 +1916,15 @@ function openData(){
         <p class="hint" style="margin:4px 0 0">${t('descSepHint')}</p>
         <p class="hint sep-prev" id="sep-prev"></p></div>
     </div>
+    <div class="row">
+      <div class="field"><label>${t('tagSep')}</label>
+        <input type="text" id="set-tagsep" maxlength="8" value="${esc(tagSep())}" placeholder=" | ">
+        <p class="hint" style="margin:4px 0 0">${t('tagSepHint')}</p></div>
+      <div class="field"><label>${t('tagNoneW')}</label>
+        <input type="text" id="set-tagnone" maxlength="16" value="${esc(tagNone())}" placeholder="None">
+        <p class="hint" style="margin:4px 0 0">${t('tagNoneHint')}</p></div>
+    </div>
+    <p class="hint sep-prev" id="tag-prev" style="margin:0 0 9px"></p>
     <div class="field"><label>${t('columns')}</label>
       <div style="display:flex;flex-wrap:wrap;gap:10px;margin-top:4px">
         ${Object.keys(XCOLS).map(k=>`<label class="chk"><input type="checkbox" data-col="${k}" ${(S().exportCols||[]).includes(k)?'checked':''}> ${t(XCOLS[k].t)}</label>`).join('')}
@@ -1689,6 +1948,15 @@ function openData(){
   el('set-sep').oninput=e=>{ S().descSep=e.target.value; sepPrev(); };
   el('set-sep').onchange=e=>{ S().descSep=e.target.value; save(); sepPrev(); };
   sepPrev();
+  // Both of these hinge on invisible spaces, so the preview spells them out the same way.
+  const tagPrev=()=>{ const n=el('tag-prev'); if(!n) return;
+    n.innerHTML=t('tagPreview','<b>'+esc(showWs(tagParts('WG-12','',lang==='de'?'Parser gefixt.':'Parser fixed.')))+'</b>'); };
+  ['tagsep','tagnone'].forEach(k=>{
+    const key=k==='tagsep'?'tagSep':'tagNone', inp=el('set-'+k);
+    inp.oninput=e=>{ S()[key]=e.target.value; tagPrev(); };
+    inp.onchange=e=>{ S()[key]=e.target.value; save(); tagPrev(); render(); };
+  });
+  tagPrev();
   const setTheme=patch=>{ S().theme=Object.assign({},THEME_DEFAULT,S().theme||{},patch); save(); applyTheme(); };
   ['bg','text','accent'].forEach(k=>{
     const inp=el('th-'+k); if(!inp) return;
@@ -1748,8 +2016,11 @@ function assignHotkey(n){
   toast(`${n} · ${p.label}`);
 }
 function focusDesc(){
-  const i=el('ed-desc')||el('now-desc');
-  if(!i){ toast(t('tSelectFirst')); return; }
+  const pre=el('ed-desc')?'ed':(el('now-desc')?'now':null);
+  if(!pre){ toast(t('tSelectFirst')); return; }
+  // On a Themenarbeit block the first *empty* field is the one that wants filling —
+  // usually the PEG on a Hub row, and the description everywhere else.
+  const i=[pre+'-wg',pre+'-prj',pre+'-desc'].map(el).find(n=>n&&!n.value.trim()) || el(pre+'-desc');
   i.focus(); i.select&&i.select();
 }
 
@@ -1822,6 +2093,7 @@ function shortcutGroups(){
       [t('scAssign'),     ['1','9']],
       [t('scClearPos'),   ['0']],
       [t('scEditDesc'),   ['↵','L']],
+      [t('scTagTab'),     ['⇥']],
       [t('scNextUn'),     ['N']],
       [t('scNextBlock'),  ['⇥']],
       [t('scQuickPick'),  ['P']],
@@ -1856,7 +2128,7 @@ function openShortcuts(){
 
 /* ============================ week view ============================ */
 function weekStats(ws){
-  const days=[], per={}; let work=0, pause=0, unlabeledTime=0, unlabeledCount=0;
+  const days=[], per={}; let work=0, pause=0, unlabeledTime=0, unlabeledCount=0, noWgCount=0;
   for(let i=0;i<7;i++){
     const d=addDays(ws,i), dm=d.getTime(), bl=blocksOfDay(dm);
     let w=0,p=0,u=0,uc=0;
@@ -1868,10 +2140,10 @@ function weekStats(ws){
       else if(b.positionId) w+=dur;
       else { u+=dur; uc++; }
     });
-    work+=w; pause+=p; unlabeledTime+=u; unlabeledCount+=uc;
+    work+=w; pause+=p; unlabeledTime+=u; unlabeledCount+=uc; noWgCount+=untaggedBlocks(bl).length;
     days.push({date:d, ms:dm, work:w, pause:p, unlabeled:u, count:bl.length, compl:complianceOf(bl)});
   }
-  return {days, per, work, pause, unlabeledTime, unlabeledCount};
+  return {days, per, work, pause, unlabeledTime, unlabeledCount, noWgCount};
 }
 function renderWeek(){
   const ws=startOfWeek(selectedDate), st=weekStats(ws), wv=el('weekview');
@@ -1932,7 +2204,8 @@ function renderWeekRail(ws,st){
     <div class="bar" style="margin-top:10px"><i style="width:${Math.min(100,target?st.work/target*100:0)}%;background:var(--accent-bright)"></i></div>
     <div class="tline" style="margin-top:10px"><span class="dim">${t('breakRow')}</span><span class="tabnum dim">${fmtDur(st.pause)}</span></div>
     ${billSplitHtml(st.days.flatMap(d=>blocksOfDay(d.ms)))}
-    ${st.unlabeledCount?`<div class="compl warn">${t('weekUnlabeled',st.unlabeledCount)}</div>`:''}`;
+    ${st.unlabeledCount?`<div class="compl warn">${t('weekUnlabeled',st.unlabeledCount)}</div>`:''}
+    ${st.noWgCount?`<div class="compl warn">${t('noWgWarn',st.noWgCount)}</div>`:''}`;
   // by position — work packages rolled up into their project
   el('editor-card').hidden=false;
   el('editor-card').innerHTML=`<h3>${t('byPosition')}</h3>`+positionBreakdownHtml(st.per,st.work,t('noDataWeek'));
@@ -1992,7 +2265,7 @@ function monthStats(anchor){
   const first=new Date(anchor.getFullYear(),anchor.getMonth(),1);
   const last=new Date(anchor.getFullYear(),anchor.getMonth()+1,0);
   const days=[], per={};
-  let work=0,pause=0,unlabeledCount=0,target=0,expected=0,weekdays=0,missing=0,viol=0;
+  let work=0,pause=0,unlabeledCount=0,noWgCount=0,target=0,expected=0,weekdays=0,missing=0,viol=0;
   const leave={holiday:0,vacation:0,sick:0};
   for(let i=1;i<=last.getDate();i++){
     const d=new Date(anchor.getFullYear(),anchor.getMonth(),i), dm=d.getTime();
@@ -2008,11 +2281,11 @@ function monthStats(anchor){
     if(isWeekday(dm)) weekdays++;
     if(isExpected(dm)){ expected++; if(!bl.length) missing++; }
     if(compl.viol) viol++;
-    work+=w; pause+=p; unlabeledCount+=uc; target+=dayTargetMs(dm);
+    work+=w; pause+=p; unlabeledCount+=uc; noWgCount+=untaggedBlocks(bl).length; target+=dayTargetMs(dm);
     days.push({date:d, ms:dm, work:w, pause:p, count:bl.length, type:ty, compl,
                bill:splitBillable(bl)});
   }
-  return {first,last,days,per,work,pause,unlabeledCount,target,expected,weekdays,missing,viol,leave};
+  return {first,last,days,per,work,pause,unlabeledCount,noWgCount,target,expected,weekdays,missing,viol,leave};
 }
 function renderMonth(){
   const st=monthStats(selectedDate), mv=el('monthview');
@@ -2074,6 +2347,7 @@ function renderMonthRail(st){
   const issues=[];
   if(st.missing) issues.push(`<div class="compl warn">${t('missingDays',st.missing)}</div>`);
   if(st.unlabeledCount) issues.push(`<div class="compl warn">${t('monthUnlabeled',st.unlabeledCount)}</div>`);
+  if(st.noWgCount) issues.push(`<div class="compl warn">${t('noWgWarn',st.noWgCount)}</div>`);
   if(st.viol) issues.push(`<div class="compl warn">${t('breakViol',st.viol)}</div>`);
   el('totals-card').innerHTML=`<h3>${t('perWeek')}</h3>`+weeks.map(w=>{
     const tip=`${t('week')} ${w.no} — ${t('work')} ${fmtDur(w.work)} · ${t('breakRow')} ${fmtDur(w.pause)}`;
@@ -2099,11 +2373,15 @@ function mergedRows(blocks){
   blocks.filter(b=>b.end!=null).forEach(b=>{
     const last=out[out.length-1];
     const d=(b.description||'').trim();
-    if(merge && last && last.positionId===b.positionId && Math.abs(last.end-b.start)<1000){
+    // A row states its tags once, so blocks may only merge when both tags agree —
+    // otherwise the row would claim a Hub that half of it was not booked under.
+    const tag=isTaggedBlock(b), wg=tag?effTag(b,'wg'):'', prj=tag?effTag(b,'prj'):'';
+    if(merge && last && last.positionId===b.positionId && last.wg===wg && last.prj===prj
+       && Math.abs(last.end-b.start)<1000){
       last.end=b.end;
       if(d && !last.descs.includes(d)) last.descs.push(d);
     } else {
-      out.push({start:b.start,end:b.end,positionId:b.positionId,descs:d?[d]:[]});
+      out.push({start:b.start,end:b.end,positionId:b.positionId,tagged:tag,wg,prj,descs:d?[d]:[]});
     }
   });
   return out;
@@ -2121,9 +2399,11 @@ const XCOLS={
   start:{t:'colStart', v:r=>fmtHM(r.start)},
   end:  {t:'colEnd',   v:r=>fmtHM(r.end)},
   dur:  {t:'colDur',   v:r=>fmtDurExport(r.end-r.start)},
-  proj: {t:'colProject',v:r=>{ const p=posById(r.positionId), pr=p&&projectOf(p); return pr?(pr.code||pr.label):''; }},
-  pos:  {t:'colPos',   v:r=>{ const p=posById(r.positionId); return p?(p.code||p.label):''; }},
-  desc: {t:'colDesc',  v:r=>joinDescs(r.descs)}
+  // A Hub / PEG row is not a code of its own: both columns resolve to the booking code it
+  // hangs under, so a Themenarbeit row books on the Themenarbeit code and says so.
+  proj: {t:'colProject',v:r=>{ const pr=projectOf(bookingCodeOf(posById(r.positionId))); return pr?(pr.code||pr.label):''; }},
+  pos:  {t:'colPos',   v:r=>{ const p=bookingCodeOf(posById(r.positionId)); return p?(p.code||p.label):''; }},
+  desc: {t:'colDesc',  v:r=>r.tagged?tagParts(r.wg,r.prj,joinDescs(r.descs)):joinDescs(r.descs)}
 };
 // Projectile instances differ in what they accept between merged descriptions, so the
 // separator is a setting. Stored verbatim; spaces around it are the user's choice.
@@ -2157,7 +2437,9 @@ function openExport(){
   rows.forEach((r,ri)=>cols.forEach((c,ci)=>cells.push({r:ri,c:ci,val:XCOLS[c].v(r)})));
   xstate={cells,i:0};
   const cs=complianceOf(blocks);
-  const warn=cs.viol?`<div class="compl warn" style="margin:0 0 10px">${t('warnBreak')}</div>`:'';
+  const nw=untaggedBlocks(blocks).length;
+  const warn=(cs.viol?`<div class="compl warn" style="margin:0 0 10px">${t('warnBreak')}</div>`:'')
+           +(nw?`<div class="compl warn" style="margin:0 0 10px">${t('noWgWarn',nw)}</div>`:'');
   openModal(`<h2>${t('projExport')}</h2>${warn}
     <div class="xbar"><span>${t('rowsCells',rows.length,cells.length)}</span>
       <label class="chk"><input type="checkbox" id="x-merge" ${S().mergeRows!==false?'checked':''}> ${t('mergeRows')}</label>
@@ -2232,7 +2514,8 @@ function exportICS(){
   if(!blocks.length){ toast(t('tNothingExport')); return; }
   let ics='BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//Projector//EN\r\nCALSCALE:GREGORIAN\r\n';
   blocks.forEach(b=>{
-    const p=posById(b.positionId); const sum=(p?p.label:t('unlabeled'))+(b.description?' · '+b.description:'');
+    const p=posById(b.positionId); const d=composedDesc(b);
+    const sum=(p?p.label:t('unlabeled'))+(d?' · '+d:'');
     ics+='BEGIN:VEVENT\r\n'+`UID:${b.id}@projector\r\n`+`DTSTART:${dtICS(b.start)}\r\n`+`DTEND:${dtICS(b.end)}\r\n`+`SUMMARY:${sum.replace(/[\r\n]/g,' ')}\r\n`+'END:VEVENT\r\n';
   });
   ics+='END:VCALENDAR\r\n';
@@ -2253,6 +2536,106 @@ function importFile(cb){
 }
 let toastT; function toast(msg){ const t=el('toast'); t.textContent=msg; t.classList.add('show'); clearTimeout(toastT); toastT=setTimeout(()=>t.classList.remove('show'),2200); }
 
+/* ============================ demo data ============================ */
+// A filled-in three weeks for `?demo`: one Themenarbeit code with a full Hub/PEG tree, a
+// Themenarbeit code without sub-positions (tags typed by hand), two ordinary factura
+// projects, and the awkward cases worth seeing — a per-block PEG override, a missing Hub,
+// an unlabeled block, a late break, and the three kinds of day off.
+function demoData(){
+  const d=defaults();
+  d.positions=[
+    {id:'pause',code:'PAUSE',label:'Pause',color:'#d49a4a',archived:false,reserved:true,parentId:null,billable:false,hotkey:9},
+    // Themenarbeit: its sub-positions are Hub and PEG rows, not codes. All book on THEMA.
+    {id:'int', code:'THEMA',label:'Themenarbeit',color:'#6b7a8f',archived:false,parentId:null,billable:false,tagged:true},
+    {id:'wgd', code:'',label:'Hub Datenanalyse',color:null,archived:false,parentId:'int',billable:null,wg:'HUB-DAT',hotkey:1},
+    {id:'wgd1',code:'',label:'Studie Nord',     color:null,archived:false,parentId:'int',billable:null,wg:'HUB-DAT',prj:'PEG-2451',hotkey:2},
+    {id:'wgd2',code:'',label:'Kohorte Süd',     color:null,archived:false,parentId:'int',billable:null,wg:'HUB-DAT',prj:'PEG-2610',hotkey:3},
+    {id:'wgm', code:'',label:'Hub Modellierung',color:null,archived:false,parentId:'int',billable:null,wg:'HUB-MOD',hotkey:4},
+    {id:'wgm1',code:'',label:'Prognosetool',    color:null,archived:false,parentId:'int',billable:null,wg:'HUB-MOD',prj:'PEG-3120',hotkey:5},
+    {id:'wgg', code:'',label:'Hub Gremien',     color:null,archived:false,parentId:'int',billable:null,wg:'HUB-GRE',hotkey:6},
+    // Themenarbeit as well, but with no sub-positions: both tags are typed on the block.
+    {id:'snd', code:'QUER',label:'Querschnittsaufgaben',color:'#8a6fae',archived:false,parentId:null,billable:false,tagged:true},
+    {id:'ka',  code:'PRJ-A',label:'Kunde Alpha',color:'#5e7ce0',archived:false,parentId:null,billable:true},
+    {id:'ka1', code:'PRJ-A-DEV', label:'Entwicklung',color:null,     archived:false,parentId:'ka',billable:null,hotkey:7},
+    {id:'ka2', code:'PRJ-A-MEET',label:'Meetings',   color:'#7b93e8',archived:false,parentId:'ka',billable:null,hotkey:8},
+    {id:'kb',  code:'PRJ-B',label:'Kunde Beta',color:'#4fa3a1',archived:false,parentId:null,billable:true},
+    // No hotkey left over — reachable through the quick-pick, which is the point.
+    {id:'kb1', code:'PRJ-B-INT', label:'Integration',color:null,archived:false,parentId:'kb',billable:null}
+  ];
+
+  let n=0;
+  const blocks=[], at=(day,hm)=>day+(hm[0]*60+hm[1])*60000;
+  // [from, to, positionId, description, {wg,prj} override]
+  const scripts=[
+    [[[8,30],[10,0], 'wgd1','Rohdaten aus dem Register aufbereitet.'],
+     [[10,0],[11,45],'wgd1','Auswertung der Basisvariablen.'],
+     [[11,45],[12,30],'pause'],
+     [[12,30],[14,0],'ka1','Importer für die Schnittstelle gebaut.'],
+     [[14,0],[15,0], 'ka2','Abstimmung mit dem Fachbereich.'],
+     // same Hub row, different PEG — booked through a per-block override
+     [[15,0],[17,0], 'wgd','Kohortenabgleich vorbereitet.',{prj:'PEG-2610'}]],
+
+    [[[9,0],[10,30], 'wgm1','Featureauswahl überarbeitet.'],
+     [[10,30],[12,0],'wgm', 'Modellvergleich dokumentiert.'],
+     [[12,0],[12,45],'pause'],
+     [[12,45],[14,30],'kb1','Testfälle für die Übergabe geschrieben.'],
+     [[14,30],[16,0], 'wgg','Sitzung des Hubs protokolliert.'],
+     [[16,0],[17,15], 'wgd2','Fragebogen kodiert.']],
+
+    [[[8,45],[10,15],'ka1','Parser für die Altdaten gefixt.'],
+     [[10,15],[11,0],'ka2','Daily und Planung.'],
+     [[11,0],[12,30],'wgd1','Zwischenbericht geschrieben.'],
+     [[12,30],[13,15],'pause'],
+     // a Themenarbeit code without sub-positions: both tags live on the block itself
+     [[13,15],[15,0],'snd','Konzept für die Erhebung entworfen.',{wg:'HUB-DAT',prj:'PEG-9001'}],
+     [[15,0],[16,45],'wgm1','Prognoseläufe kalibriert.']],
+
+    [[[9,0],[11,0],  'wgd2','Plausibilitätsprüfung der Kohorte.'],
+     [[11,0],[12,0], 'wgg', 'Vorbereitung der Gremienvorlage.'],
+     [[12,0],[12,30],'pause'],
+     [[12,30],[14,0],'ka1','Review und Nacharbeiten.'],
+     // no Hub at all — this is what the warning is for
+     [[14,0],[15,30],'snd','Nacherfassung ohne Zuordnung.'],
+     [[15,30],[17,0],'wgm','Zwischenstand im Hub besprochen.']],
+
+    [[[8,30],[10,0], 'wgd1','Skript für den Datenabzug angepasst.'],
+     // the late break: nothing taken before the 6 h mark
+     [[10,0],[12,0], 'ka1','Migration der Konfiguration.'],
+     [[12,0],[14,0], 'ka1','Fehlersuche im Deployment.'],
+     [[14,0],[15,0], 'wgm1','Auswertung der Läufe.'],
+     [[15,0],[15,45],'pause'],
+     [[15,45],[17,0],'wgd','Notizen sortiert.',{prj:'PEG-2451'}]],
+
+    [[[9,0],[10,30], 'wgd1','Abgleich mit dem Register.'],
+     [[10,30],[12,0],null,''],                       // unlabeled — blocks the export
+     [[12,0],[12,30],'pause'],
+     [[12,30],[15,0],'kb1','Schnittstelle gegen die Testumgebung gefahren.'],
+     [[15,0],[16,30],'wgg','Protokoll finalisiert.']]
+  ];
+
+  // Walk back over the last three weeks of weekdays; today only up to the current time.
+  const mid=todayMid(), nowMs=Date.now();
+  const days=[];
+  for(let i=20;i>=0;i--){
+    const dm=mid-i*DAY;
+    if(isWeekday(dm)) days.push(dm);
+  }
+  days.forEach((dm,i)=>{
+    const off={4:'vacation',9:'sick',12:'holiday'}[i];
+    if(off){ d.dayTypes[isoDate(dm)]=off; return; }           // a day off stays empty
+    scripts[i%scripts.length].forEach(([from,to,pos,desc,tags])=>{
+      const start=at(dm,from), end=at(dm,to);
+      if(start>=nowMs) return;                                 // never track into the future
+      const b={id:'demo'+(++n),start,end:Math.min(end,nowMs),positionId:pos||null,description:desc||''};
+      if(tags&&tags.wg) b.wg=tags.wg;
+      if(tags&&tags.prj) b.prj=tags.prj;
+      blocks.push(b);
+    });
+  });
+  d.blocks=blocks;
+  return d;
+}
+
 /* ============================ overnight safety net ============================ */
 function checkStale(){
   const r=runningBlock(); if(!r)return;
@@ -2272,6 +2655,13 @@ function checkStale(){
 
 /* ============================ boot ============================ */
 load(); applyTheme(); selectedDate=new Date(todayMid()); render(); checkStale();
+if(DEMO){
+  const badge=el('demo-badge');
+  badge.hidden=false;
+  badge.title=t('demoHint');
+  badge.onclick=()=>{ if(!confirm(t('demoReset'))) return;
+    state=demoData(); ensureHotkeys(); save(); selectedId=null; render(); };
+}
 setInterval(()=>{
   if(drag.active || viewMode!=='day' || el('overlay').style.display==='flex' || !isToday()) return;
   const r=runningBlock(); if(!r) return;
