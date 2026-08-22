@@ -397,6 +397,33 @@
 
 <script>
 "use strict";
+/* =====================================================================
+   Projector — the whole thing in one idea:
+
+     A day is ONE gapless track of blocks. Everything else is a view of
+     that track or an edit to it.
+
+   Blocks abut exactly (block[i].end === block[i+1].start), so there is no
+   gap to manage: editing is splitting at a marker or dragging a seam. Each
+   block points at a POSITION (what Projectile books) and carries free text.
+
+   Positions nest two levels — project → work package — with three
+   orthogonal axes hung off them:
+     · billability  factura / internal, inherited from the parent
+     · colour       inherited from the parent, overridable
+     · Themenarbeit the description is machine-readable "Hub | PEG | text",
+                    and the sub-positions become Hub and PEG rows
+
+   Export merges consecutive blocks into rows and walks you cell by cell.
+   Nothing persists but `state` in localStorage; every mutation ends in
+   save() + render().
+
+   Sections below, in order: storage · i18n · theme · time & position
+   helpers · rendering (chrome / timeline / rail / input helpers) · live
+   loop · editing · pointer interactions · navigation · positions manager ·
+   backup · keyboard · shortcuts · week · month · export · ICS · modals ·
+   demo data · boot.
+   ===================================================================== */
 /* ============================ state & storage ============================ */
 // `?demo` runs the whole app against a *separate* storage key, so trying the sample data
 // can never reach, overwrite or migrate a real store.
@@ -523,7 +550,7 @@ const I18N={
     clickDayHint:'Click a day to open it.',
     shortcuts:'Keyboard shortcuts', scGeneral:'General', scMarker:'Marker & cutting',
     scBlock:'Selected block', scExport:'Export dialog', scHintOpen:'Press ? for shortcuts',
-    scToggleView:'Switch day / week view', scHelp:'Show this help', scEsc:'Close / deselect',
+    scHelp:'Show this help', scEsc:'Close / deselect',
     scPrevNext:'Previous / next day (week, month)', scToday:'Jump to today',
     scMove:'Move marker', scSplit:'Split block at marker', scMerge:'Merge with neighbour',
     scDelete:'Delete block', scCopyCell:'Copy cell and advance', scNavCell:'Previous / next cell',
@@ -634,7 +661,7 @@ const I18N={
     clickDayHint:'Tag anklicken zum Öffnen.',
     shortcuts:'Tastaturkürzel', scGeneral:'Allgemein', scMarker:'Marker & Schneiden',
     scBlock:'Ausgewählter Block', scExport:'Export-Dialog', scHintOpen:'? für Tastaturkürzel',
-    scToggleView:'Tages-/Wochenansicht wechseln', scHelp:'Diese Hilfe anzeigen', scEsc:'Schließen / Auswahl aufheben',
+    scHelp:'Diese Hilfe anzeigen', scEsc:'Schließen / Auswahl aufheben',
     scPrevNext:'Vorheriger / nächster Tag (Woche, Monat)', scToday:'Zu heute springen',
     scMove:'Marker bewegen', scSplit:'Block am Marker teilen', scMerge:'Mit Nachbarn verbinden',
     scDelete:'Block löschen', scCopyCell:'Zelle kopieren und weiter', scNavCell:'Vorherige / nächste Zelle',
@@ -890,7 +917,6 @@ function posColor(p){
   const par=projectOf(p);
   return par ? mix(posColor(par),'#ffffff',0.18) : '#5e7ce0';
 }
-function inheritedColor(p){ const par=projectOf(p); return par?mix(posColor(par),'#ffffff',0.18):null; }
 function pathLabel(p){ const par=projectOf(p); return par ? `${par.label} › ${p.label}` : (p?p.label:''); }
 // Real project/package names are long. Render them as two spans so the *project* prefix
 // absorbs the truncation and the work package — the informative half — stays readable.
@@ -924,11 +950,17 @@ function bookingCodeOf(p){ return isPreset(p) ? projectOf(p) : p; }
 function presetOf(b){ const p=posById(b&&b.positionId); return isPreset(p)?p:null; }
 // Tags inherit from the Hub / PEG row and are overridable per block — the same shape as
 // colour and billability, so renaming a row's tag also fixes every block booked on it.
+// Absent (null / undefined) means inherit; an empty string is an explicit *none*, which is
+// how a block gets booked on a PEG row without that PEG. Treating "" as inherit made the
+// cleared field silently fill itself back in.
 function effTag(b,f){
-  const v=b&&b[f]; if(v!=null&&v!=='') return v;
+  const v=b&&b[f];
+  if(v!=null) return v;
   const pr=presetOf(b); return (pr&&pr[f])||'';
 }
-function tagSep(){ const s=S().tagSep; return s==null?' | ':s; }
+// A blank separator would fuse the three fields into one cell the unit's parser cannot
+// split, so it falls back to the default rather than being taken literally.
+function tagSep(){ const s=S().tagSep; return (s==null||s==='')?' | ':s; }
 function tagNone(){ const s=S().tagNone; return s==null?'None':s; }
 function tagParts(wg,prj,text){
   return [(wg||'').trim(), (prj||'').trim()||tagNone(), text].join(tagSep());
@@ -1048,6 +1080,7 @@ function posOptions(sel){
   return h;
 }
 
+/* ======================= rendering — the day timeline ======================= */
 function renderTimeline(){
   const tl=el('timeline'); const blocks=dayBlocks();
   let minM=S().dayStartHour*60, maxM=S().dayEndHour*60;
@@ -1097,6 +1130,7 @@ function renderTimeline(){
 }
 function esc(s){ return String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
 
+/* ==================== rendering — the cards in the rail ==================== */
 function renderNow(){
   const c=el('now-card'); const run=runningBlock();
   if(!isToday()){
@@ -1297,6 +1331,7 @@ function billSplitHtml(blocks){
       <span><i style="background:var(--intern)"></i>${t('internal')} <b class="tabnum">${fmtDur(sp.intern)}</b> <span class="dim">${100-pf}%</span></span>
     </div>`;
 }
+/* ===================== input helpers — recall & tagging ===================== */
 /* --- description recall ---
    A <textarea> can't carry a <datalist>, so the "descriptions I've typed before" affordance
    is rebuilt here: newest first, prefix matches ahead of substring matches, keyboard-driven.
@@ -1407,7 +1442,14 @@ function wireTagFields(b,pre,after){
     const inp=el(pre+'-'+k); if(!inp) return;
     const box=el(pre+'-'+k+'s');
     const opts={pool:()=>tagPool(k,b),all:true,max:8};
-    const set=v=>{ b[k]=cleanTag(v); save(); paint(); after(); };
+    // Typing exactly what the row already supplies is not an override — storing it would
+    // freeze the block against a later rename of that row. Anything else, a deliberate
+    // blank included, is kept on the block.
+    const set=v=>{
+      const c=cleanTag(v), inherited=((presetOf(b)||{})[k])||'';
+      b[k] = c===inherited ? null : c;
+      save(); paint(); after();
+    };
     // Focusing a tag field almost always means changing it, so the whole (short) vocabulary
     // opens — filtering by the value already in the box would hide every alternative.
     inp.onfocus=()=>openSugg(box,'',v=>{ inp.value=v; set(v); },opts);
@@ -1728,7 +1770,10 @@ function openPositions(){
     const out=[], used=new Set();
     kids.filter(k=>!k.prj).forEach(w=>{
       out.push([w,1]); used.add(w.id);
-      kids.filter(k=>k.prj&&(k.wg||'')===(w.wg||'')).forEach(k=>{ out.push([k,2]); used.add(k.id); });
+      // `used` also guards against a second Hub row carrying the same tag: without it every
+      // PEG row under that tag would be drawn once per Hub row claiming it.
+      kids.filter(k=>k.prj&&!used.has(k.id)&&(k.wg||'')===(w.wg||''))
+        .forEach(k=>{ out.push([k,2]); used.add(k.id); });
     });
     kids.filter(k=>!used.has(k.id)).forEach(k=>out.push([k,1]));
     return out;
@@ -1758,7 +1803,7 @@ function openPositions(){
       <input type="text" id="np-label" placeholder="${t('labelPh')}">
       <select id="np-parent">
         <option value="">${t('noParent')}</option>
-        ${parents.map(x=>`<option value="${x.id}"${isTagged(x)?' data-tagged="1"':''}>${esc(x.label)}</option>`).join('')}
+        ${parents.map(x=>`<option value="${x.id}">${esc(x.label)}</option>`).join('')}
       </select>
       <span></span>
       <div class="tagcell">
@@ -2128,22 +2173,22 @@ function openShortcuts(){
 
 /* ============================ week view ============================ */
 function weekStats(ws){
-  const days=[], per={}; let work=0, pause=0, unlabeledTime=0, unlabeledCount=0, noWgCount=0;
+  const days=[], per={}; let work=0, pause=0, unlabeledCount=0, noWgCount=0;
   for(let i=0;i<7;i++){
     const d=addDays(ws,i), dm=d.getTime(), bl=blocksOfDay(dm);
-    let w=0,p=0,u=0,uc=0;
+    let w=0,p=0,uc=0;
     bl.forEach(b=>{
       const dur=bEnd(b)-b.start;
       const key=b.positionId||'__un';
       per[key]=(per[key]||0)+dur;
       if(b.positionId===PAUSE()) p+=dur;
       else if(b.positionId) w+=dur;
-      else { u+=dur; uc++; }
+      else uc++;
     });
-    work+=w; pause+=p; unlabeledTime+=u; unlabeledCount+=uc; noWgCount+=untaggedBlocks(bl).length;
-    days.push({date:d, ms:dm, work:w, pause:p, unlabeled:u, count:bl.length, compl:complianceOf(bl)});
+    work+=w; pause+=p; unlabeledCount+=uc; noWgCount+=untaggedBlocks(bl).length;
+    days.push({date:d, ms:dm, work:w, pause:p, count:bl.length, compl:complianceOf(bl)});
   }
-  return {days, per, work, pause, unlabeledTime, unlabeledCount, noWgCount};
+  return {days, per, work, pause, unlabeledCount, noWgCount};
 }
 function renderWeek(){
   const ws=startOfWeek(selectedDate), st=weekStats(ws), wv=el('weekview');
