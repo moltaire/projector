@@ -364,6 +364,26 @@ function run(){
     return eq([W.fmtDays(2),W.fmtDays(1.5),W.fmtDays(0.5)],['2','1,5','0,5']);
   });
 
+  H('string tables');
+
+  test('the two language tables define exactly the same keys',()=>{
+    const en=I18NKEYS.en, de=I18NKEYS.de;
+    const missDe=[...en].filter(k=>!de.has(k)), missEn=[...de].filter(k=>!en.has(k));
+    return (missDe.length||missEn.length)
+      ? 'missing in de: '+J(missDe)+'\nmissing in en: '+J(missEn) : null;
+  });
+
+  test('no key is defined twice in a language table',()=>{
+    // A duplicate is not an error in JS — the last one silently wins — so a key reused for
+    // a second purpose quietly changes the first one's wording. tCopied did exactly that.
+    const dupes=[];
+    for(const lang of ['en','de']){
+      const seen=new Set();
+      for(const k of I18NDUPES[lang]){ if(seen.has(k)) dupes.push(lang+'.'+k); seen.add(k); }
+    }
+    return dupes.length ? 'defined twice: '+J(dupes) : null;
+  });
+
   H('billability');
 
   test('a work package inherits its project',()=>{
@@ -400,6 +420,20 @@ function run(){
   document.title=(fail?'✕ ':'✓ ')+sum.textContent+' — Projector tests';
 }
 
+/* The string tables are checked against the source text rather than the built object,
+   because a duplicate key has already collapsed by the time the object exists. */
+let I18NKEYS={en:new Set(),de:new Set()}, I18NDUPES={en:[],de:[]};
+async function loadStrings(){
+  const src=await (await fetch('index.html')).text();
+  const body=src.slice(src.indexOf('const I18N={'),src.indexOf('function t(k'));
+  const cut=body.indexOf('\n  de:{');
+  for(const [lang,part] of [['en',body.slice(0,cut)],['de',body.slice(cut)]]){
+    const keys=[...part.matchAll(/^ {4}([a-zA-Z_]\w*):/gm)].map(m=>m[1]);
+    I18NDUPES[lang]=keys;
+    I18NKEYS[lang]=new Set(keys);
+  }
+}
+
 const frame=document.getElementById('app');
 frame.onload=()=>{
   try{ W=frame.contentWindow; void W.defaults; }
@@ -419,7 +453,7 @@ frame.onload=()=>{
   '})');
   // Fixtures are in-memory only: nothing a test does may reach the demo store on disk.
   W.save=function(){};
-  run();
+  loadStrings().then(run,run);
 };
 </script>
 </body>

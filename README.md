@@ -24,7 +24,7 @@ The name is the same joke as *Projectile* (project + suffix), minus the ordnance
 
 | key | action |
 |-----|--------|
-| `n` | next block without a position |
+| `n` | next block without a position (carries on into later days) |
 | `1`–`9` | assign that position |
 | `0` | clear position |
 | `↵` / `l` | edit description |
@@ -32,6 +32,7 @@ The name is the same joke as *Projectile* (project + suffix), minus the ordnance
 | `⇥` / `⇧⇥` | next / previous block |
 | `⇥` | inside a Themenarbeit block: Hub → PEG → description |
 | `p` | position quick-pick |
+| `c` / `v` | copy the position, text and tags — paste them onto the block at the marker |
 | `s` | split block at the marker |
 | `m` | merge with neighbour |
 | `del` | delete block |

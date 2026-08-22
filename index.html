@@ -494,6 +494,10 @@ const I18N={
     wgTag:'Hub', prjTag:'PEG', wgPh:'HUB',
     noWgWarn:n=>`${n} Themenarbeit block${n>1?'s':''} without a Hub.`,
     scTagTab:'Hub → PEG → description',
+    scCopyLabel:'Copy position, text and tags', scPasteLabel:'Paste them onto the block at the marker',
+    tLabelCopied:l=>`Copied: ${l}`, tLabelPasted:l=>`Pasted: ${l}`,
+    tNothingCopied:'Nothing copied yet — press c on a block first.',
+    tNothingToCopy:'This block has no position and no text to copy.',
     shortUnlabeled:'pos!', shortNoWg:'hub!',
     tNoIssue:'Nothing left to fix here.',
     tJumpedTo:d=>`Jumped to ${d}`,
@@ -610,6 +614,10 @@ const I18N={
     wgTag:'Hub', prjTag:'PEG', wgPh:'HUB',
     noWgWarn:n=>`${n} Themenarbeit-${n>1?'Blöcke':'Block'} ohne Hub.`,
     scTagTab:'Hub → PEG → Beschreibung',
+    scCopyLabel:'Position, Text und Tags kopieren', scPasteLabel:'Auf den Block am Marker übertragen',
+    tLabelCopied:l=>`Kopiert: ${l}`, tLabelPasted:l=>`Eingefügt: ${l}`,
+    tNothingCopied:'Noch nichts kopiert — erst c auf einem Block drücken.',
+    tNothingToCopy:'Dieser Block hat weder Position noch Text zum Kopieren.',
     shortUnlabeled:'Pos!', shortNoWg:'Hub!',
     tNoIssue:'Hier ist nichts mehr offen.',
     tJumpedTo:d=>`Gesprungen zu ${d}`,
@@ -1829,6 +1837,8 @@ document.addEventListener('keydown',e=>{
   if(e.key==='Enter'){ e.preventDefault(); focusDesc(); return; }
   if(e.key==='Tab'){ e.preventDefault(); gotoBlock(e.shiftKey?-1:1); return; }
   if(k==='n'){ e.preventDefault(); gotoNextUnlabeled(); return; }
+  if(k==='c'&&!e.metaKey&&!e.ctrlKey){ e.preventDefault(); copyLabel(); return; }
+  if(k==='v'&&!e.metaKey&&!e.ctrlKey){ e.preventDefault(); pasteLabel(); return; }
   if(k==='s'){ splitAtPlayhead(); }
   else if(k==='m'){ mergeSelected(); }
   else if(k==='p'){ e.preventDefault(); openQuickPick(); }
@@ -2189,6 +2199,39 @@ function gotoBlock(dir){
 function selectedBlock(){                      // only ever the block visible on this day
   return dayBlocks().find(x=>x.id===selectedId)||null;
 }
+function blockAtMarker(){
+  return playhead ? dayBlocks().find(x=>x.start<=playhead && bEnd(x)>playhead)||null : null;
+}
+
+/* --- copying a label, not a block ---
+   The day is one gapless track, so pasting a block can never be a free insertion: it has to
+   displace time that was actually recorded. What repeats across a week is the *label* — the
+   same position, wording and tags — not the duration, so `c` and `v` carry that and leave
+   every boundary alone. Held in memory only; a reload starts empty. --- */
+let clip=null;
+function copyLabel(){
+  const b=selectedBlock();
+  if(!b){ toast(t('tSelectFirst')); return; }
+  if(!b.positionId && !(b.description||'').trim()){ toast(t('tNothingToCopy')); return; }
+  clip={positionId:b.positionId, description:b.description||'', wg:b.wg, prj:b.prj};
+  toast(t('tLabelCopied', clipLabelText()));
+}
+function pasteLabel(){
+  if(!clip){ toast(t('tNothingCopied')); return; }
+  const b=blockAtMarker()||selectedBlock();      // the marker wins; the selection is the fallback
+  if(!b){ toast(t('tMoveMarker')); return; }
+  b.positionId=clip.positionId;
+  b.description=clip.description;
+  b.wg=clip.wg; b.prj=clip.prj;                  // undefined clears an override, as it should
+  selectedId=b.id; save(); render();
+  toast(t('tLabelPasted', clipLabelText()));
+}
+function clipLabelText(){
+  if(!clip) return '';
+  const p=posById(clip.positionId);
+  const d=(clip.description||'').trim();
+  return (p?p.label:t('unlabeled'))+(d?' · '+(d.length>28?d.slice(0,27)+'…':d):'');
+}
 function assignHotkey(n){
   const b=selectedBlock();
   if(!b){ toast(t('tSelectFirst')); return; }
@@ -2280,6 +2323,8 @@ function shortcutGroups(){
       [t('scNextUn'),     ['N']],
       [t('scNextBlock'),  ['⇥']],
       [t('scQuickPick'),  ['P']],
+      [t('scCopyLabel'),  ['C']],
+      [t('scPasteLabel'), ['V']],
       [t('scCommitNext'), ['⌘↵']]
     ]],
     [t('scBlock'), [
