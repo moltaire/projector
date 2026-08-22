@@ -143,6 +143,12 @@ Work packages inherit a lighter shade of their project's colour, so a project re
 visual family on the timeline.
 - Manually maintained; importable/exportable as JSON (seed once, reuse forever).
 
+**Half days.** `dayTypes[iso]` holds either the bare type string (a whole day, the shape
+every store written before half days used) or `{t,f}` once a fraction is involved.
+`dayType()` and `dayOff()` hide which of the two a caller has, so the target arithmetic —
+`dayTargetMs = target × (1 − dayOff)` — is the only place the fraction appears. A half day
+is still *expected*: it owes half a target and should still have something tracked on it.
+
 ### Persistence envelope (backup / restore)
 ```jsonc
 { "version": 1, "positions": [...], "blocks": [...], "settings": {...} }
