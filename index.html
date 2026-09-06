@@ -102,10 +102,13 @@
   .block.sel{border-color:var(--text); box-shadow:inset 3px 0 0 rgba(0,0,0,.25),0 0 0 1px rgba(255,255,255,.25)}
   .block.unlabeled{background:repeating-linear-gradient(45deg,var(--line),var(--line) 7px,var(--card2) 7px,var(--card2) 14px); color:var(--text)}
   .block.running::after{content:"●"; position:absolute; top:3px; right:6px; color:#fff; font-size:9px; animation:pulse 1.6s infinite}
-  .rz{position:absolute; left:0; right:0; height:7px; cursor:ns-resize; z-index:2}
+  /* touch-action:none on every drag surface: a vertical drag is also the timeline's scroll
+     gesture, and preventDefault() on pointerdown does not win that argument — only this does.
+     They are all thin strips, so the scroller keeps working everywhere between them. */
+  .rz{position:absolute; left:0; right:0; height:7px; cursor:ns-resize; z-index:2; touch-action:none}
   .rz-top{top:0} .rz-bot{bottom:0}
   @keyframes pulse{50%{opacity:.3}}
-  .seam{position:absolute; left:0; right:14px; height:11px; transform:translateY(-5.5px); cursor:row-resize; z-index:3}
+  .seam{position:absolute; left:0; right:14px; height:11px; transform:translateY(-5.5px); cursor:row-resize; z-index:3; touch-action:none}
   .seam .ln{position:absolute; top:5px; left:0; right:0; border-top:1px solid transparent}
   .seam:hover .ln{border-top:1px dashed var(--accent-bright)}
   .seam .mrg{position:absolute; right:0; top:0; transform:translateY(-3px); display:none;
@@ -115,13 +118,13 @@
   #nowline{position:absolute; left:-50px; right:14px; border-top:2px solid var(--focus); z-index:2; pointer-events:none}
   #nowline::before{content:""; position:absolute; left:-4px; top:-4px; width:7px; height:7px; border-radius:50%; background:var(--focus)}
   /* scrub rail: the hour-label strip is the marker's home and drag surface */
-  #gutter{position:absolute; left:-56px; width:56px; top:0; bottom:0; z-index:0; cursor:row-resize; border-right:1px solid var(--line)}
+  #gutter{position:absolute; left:-56px; width:56px; top:0; bottom:0; z-index:0; cursor:row-resize; border-right:1px solid var(--line); touch-action:none}
   #gutter:hover{background:var(--accent-ghost)}
   #gutter .gh{position:absolute; left:0; right:0; border-top:1px dashed var(--accent-bright); opacity:0; pointer-events:none}
   #gutter:hover .gh{opacity:.55}
   #playhead{position:absolute; left:-56px; right:14px; border-top:2px solid var(--accent-bright); z-index:5; pointer-events:none}
-  #playhead .ph-hit{position:absolute; left:0; right:0; top:-5px; height:11px; pointer-events:auto; cursor:row-resize}
-  #playhead .ph-handle{position:absolute; left:0; top:-7px; width:0; height:0; border-style:solid; border-width:7px 0 7px 11px; border-color:transparent transparent transparent var(--accent-bright); pointer-events:auto; cursor:row-resize}
+  #playhead .ph-hit{position:absolute; left:0; right:0; top:-5px; height:11px; pointer-events:auto; cursor:row-resize; touch-action:none}
+  #playhead .ph-handle{position:absolute; left:0; top:-7px; width:0; height:0; border-style:solid; border-width:7px 0 7px 11px; border-color:transparent transparent transparent var(--accent-bright); pointer-events:auto; cursor:row-resize; touch-action:none}
   #playhead .ph-time{position:absolute; left:13px; top:-8px; font-size:10px; font-weight:600; color:var(--on-accent); background:var(--accent-bright); padding:1px 4px; border-radius:3px; font-variant-numeric:tabular-nums}
   #ghost{position:absolute; left:0; right:14px; background:var(--accent-ghost); border:1px solid var(--accent-bright); border-radius:7px; display:none; pointer-events:none; z-index:1}
   /* ---- rail ---- */
@@ -373,6 +376,24 @@
     .wk-blk{font-size:8px; padding:1px 2px; left:1px; right:1px}
     .wk-dt{font-size:10px}
   }
+  /* ---- touch ---- */
+  /* Keyed on hover, not width: a tablet is wide and still has no cursor. Last in the sheet
+     for the same reason as the width query above — media queries add no specificity, so
+     source order is what makes these win. */
+  @media (hover:none){
+    .seam{height:26px; transform:translateY(-13px)}
+    .seam .ln{top:12px}
+    /* The merge button lived on :hover, which never happens under a finger. Pin it to the
+       seams around the selected block — every seam at once would be a column of buttons. */
+    .seam.sel .mrg{display:block; transform:translateY(4px)}
+    #playhead .ph-hit{top:-14px; height:28px}
+    #playhead .ph-handle{top:-11px; border-width:11px 0 11px 16px}
+    /* The resize strips are the one thing that cannot just grow: a 15-min block is 22 px
+       tall, so a finger-sized handle would swallow the block it belongs to. They stay
+       modest — the track is gapless, so every interior edge is also a seam, and the seam is
+       the better target. */
+    .rz{height:11px}
+  }
 </style>
 </head>
 <body>
@@ -476,7 +497,7 @@ const I18N={
     duration:d=>`Duration ${d}`, split:'Split ✂', del:'Delete',
     editorHint:'<b>↵</b> description · <b>n</b> next open block · <b>?</b> all shortcuts',
     totals:'Totals', noBlocks:'No blocks yet.', work:'Work', breakRow:'Break (Pause)',
-    unlabeled:'unlabeled', mergeBtn:'merge',
+    unlabeled:'unlabeled', mergeBtn:'merge', mergeBtnLong:'Merge ⇥⇤',
     unlabeledWarn:n=>`${n} unlabeled block${n>1?'s':''} — assign a position before exporting.`,
     breakNone:rem=>`No break due yet — ${rem} of work until the 30-min break is required.`,
     breakOkBy:(min,mark)=>`Break OK — ${min} min taken before the ${mark} mark.`, breakOk:'Break OK.',
@@ -604,7 +625,7 @@ const I18N={
     duration:d=>`Dauer ${d}`, split:'Teilen ✂', del:'Löschen',
     editorHint:'<b>↵</b> Beschreibung · <b>n</b> nächster offener Block · <b>?</b> alle Kürzel',
     totals:'Summen', noBlocks:'Noch keine Blöcke.', work:'Arbeit', breakRow:'Pause',
-    unlabeled:'ohne Position', mergeBtn:'verbinden',
+    unlabeled:'ohne Position', mergeBtn:'verbinden', mergeBtnLong:'Verbinden ⇥⇤',
     unlabeledWarn:n=>`${n} ${n>1?'Blöcke':'Block'} ohne Position — vor dem Export zuweisen.`,
     breakNone:rem=>`Noch keine Pause fällig — noch ${rem} Arbeit bis zur 30-Min-Pause.`,
     breakOkBy:(min,mark)=>`Pause OK — ${min} Min vor der ${mark}-Grenze genommen.`, breakOk:'Pause OK.',
@@ -1280,7 +1301,8 @@ function renderTimeline(){
     const a=blocks[i], c=blocks[i+1];
     if(Math.abs(a.end-c.start)<1000){ // abutting seam
       const y=(minOfDay(a.end)-minM)*PPM;
-      h+=`<div class="seam" data-seam="${i}" style="top:${y}px"><div class="ln"></div><button class="mrg" data-merge="${i}">${t('mergeBtn')}</button></div>`;
+      const sel=(a.id===selectedId||c.id===selectedId)?' sel':'';
+      h+=`<div class="seam${sel}" data-seam="${i}" style="top:${y}px"><div class="ln"></div><button class="mrg" data-merge="${i}">${t('mergeBtn')}</button></div>`;
     }
   }
   if(playhead==null || playhead<dayStartMs() || playhead>dayStartMs()+DAY) playhead = isToday()? now() : dayStartMs()+12*3600000;
@@ -1385,6 +1407,7 @@ function renderEditor(){
     <div class="dim tabnum" style="margin-bottom:10px">${t('duration',fmtDur(bEnd(b)-b.start))}</div>
     <div class="nowbtns">
       <button class="btn outline" id="ed-split">${t('split')}</button>
+      <button class="btn outline" id="ed-merge">${t('mergeBtnLong')}</button>
       <button class="btn outline" id="ed-del">${t('del')} ${TRASH}</button>
     </div>
     <div class="hint">${t('editorHint')}</div>`;
@@ -1417,6 +1440,9 @@ function renderEditor(){
   el('ed-start').onchange=e=>{ const v=parseHMok(e.target.value); if(v==null){ renderEditor(); return; } setStart(b,v); };
   if(!running) el('ed-end').onchange=e=>{ const v=parseHMok(e.target.value); if(v==null){ renderEditor(); return; } setEnd(b,v); };
   el('ed-split').onclick=()=>cutBlockAt(b.id,(b.start+bEnd(b))/2);
+  // Split and delete had buttons, merge only had the m key and a hover-only button on the
+  // seam — so on a touch device half of the editing grammar (§2) was unreachable.
+  el('ed-merge').onclick=mergeSelected;
   el('ed-del').onclick=()=>deleteBlock(b.id);
 }
 
@@ -1540,8 +1566,9 @@ function openSugg(box,q,accept,opts){
   if(br.bottom>sr.bottom && (br.top-sr.top)>(sr.bottom-br.top)){
     box.style.top='auto'; box.style.bottom='100%'; box.style.margin='0 0 2px';
   }
-  // mousedown, not click: the textarea's blur would tear the list down first
-  box.querySelectorAll('[data-s]').forEach(n=>n.onmousedown=e=>{ e.preventDefault(); suggPick(+n.dataset.s); });
+  // pointerdown, not click: the textarea's blur would tear the list down first, and under a
+  // finger a synthesised mousedown arrives only after that blur has already fired
+  box.querySelectorAll('[data-s]').forEach(n=>n.onpointerdown=e=>{ e.preventDefault(); suggPick(+n.dataset.s); });
 }
 function paintSugg(){
   const box=suggBoxEl; if(!box) return;
@@ -1711,7 +1738,10 @@ function yToMs(clientY){
   const min=curWinStart + (clientY-r.top)/PPM;
   return dayStartMs()+min*60000;
 }
-el('timeline').addEventListener('mousedown',e=>{
+/* Pointer events, not mouse events: one code path drives a mouse, a finger and a pen. The
+   old mouse handlers were unreachable under touch — a tap synthesises a click, but a drag
+   never synthesises anything, so nothing on the timeline could be moved on a phone. */
+el('timeline').addEventListener('pointerdown',e=>{
   // marker: grab its line anywhere, its handle, or anywhere on the gutter rail
   if(e.target.closest('#gutter')||e.target.closest('.ph-hit')||e.target.closest('.ph-handle')){ startPlayheadDrag(e); return; }
   const r=el('timeline').getBoundingClientRect();
@@ -1726,11 +1756,11 @@ el('timeline').addEventListener('mousedown',e=>{
   }
   startDraw(e);
 });
-el('timeline-wrap').addEventListener('mousedown',e=>{
+el('timeline-wrap').addEventListener('pointerdown',e=>{
   const r=el('timeline').getBoundingClientRect();
   if(e.clientX < r.left) startPlayheadDrag(e);
 });
-el('timeline').addEventListener('mousemove',e=>{                 // gutter hover preview
+el('timeline').addEventListener('pointermove',e=>{               // gutter hover preview
   const g=el('gutter'); if(!g) return;
   const gh=g.querySelector('.gh'); if(!gh) return;
   if(e.target.closest('#gutter')){
@@ -1738,12 +1768,31 @@ el('timeline').addEventListener('mousemove',e=>{                 // gutter hover
     gh.style.top=((snapMs(yToMs(e.clientY))-dayStartMs())/60000-curWinStart)*PPM+'px';
   }
 });
+/* Capture on the timeline so a drag survives the pointer leaving it, and treat
+   pointercancel as an end: on touch the browser claims the gesture for scrolling wherever
+   touch-action allows it, and a drag left listening after that would never stop. `end` is
+   told which it was, since a cancelled gesture must not be read as a completed one. */
+function trackDrag(e,move,end){
+  const tl=el('timeline'), pid=e.pointerId;
+  try{ tl.setPointerCapture(pid); }catch(_){}
+  const mv=ev=>{ if(ev.pointerId===pid) move(ev); };
+  const up=ev=>{
+    if(ev.pointerId!==pid) return;
+    document.removeEventListener('pointermove',mv);
+    document.removeEventListener('pointerup',up);
+    document.removeEventListener('pointercancel',up);
+    try{ tl.releasePointerCapture(pid); }catch(_){}
+    end(ev, ev.type==='pointercancel');
+  };
+  document.addEventListener('pointermove',mv);
+  document.addEventListener('pointerup',up);
+  document.addEventListener('pointercancel',up);
+}
 function startPlayheadDrag(e){
   e.preventDefault(); drag.active=true;
   const set=ev=>{ let ms=snapMs(yToMs(ev.clientY)); ms=Math.max(dayStartMs(),Math.min(dayStartMs()+DAY,ms)); playhead=ms; renderTimeline(); };
   set(e);
-  const up=()=>{ drag.active=false; document.removeEventListener('mousemove',set); document.removeEventListener('mouseup',up); };
-  document.addEventListener('mousemove',set); document.addEventListener('mouseup',up);
+  trackDrag(e,set,()=>{ drag.active=false; });
 }
 function startBlockPointer(id,e){
   e.preventDefault();
@@ -1761,8 +1810,11 @@ function startBlockPointer(id,e){
     ns=Math.max(lower,Math.min(upper-dur,ns));
     b.start=ns; b.end=ns+dur; renderTimeline();
   };
-  const up=()=>{ drag.active=false; document.removeEventListener('mousemove',move); document.removeEventListener('mouseup',up); if(moved){ save(); render(); } else selectBlock(id); };
-  document.addEventListener('mousemove',move); document.addEventListener('mouseup',up);
+  // A block keeps the scroller's touch-action, so dragging one on a phone pans the timeline
+  // and the browser cancels this gesture. That must not read as a tap: selecting reveals the
+  // rail on a narrow screen, and scrolling would keep throwing the user out of the timeline.
+  trackDrag(e,move,(ev,cancelled)=>{ drag.active=false;
+    if(moved){ save(); render(); } else if(!cancelled) selectBlock(id); });
 }
 function startEdgeDrag(id,which,e){
   e.preventDefault(); drag.active=true;
@@ -1776,8 +1828,7 @@ function startEdgeDrag(id,which,e){
     else b.end=Math.max(b.start+min,Math.min(upper,ms));
     renderTimeline(); renderTotals();
   };
-  const up=()=>{ drag.active=false; document.removeEventListener('mousemove',move); document.removeEventListener('mouseup',up); save(); render(); };
-  document.addEventListener('mousemove',move); document.addEventListener('mouseup',up);
+  trackDrag(e,move,()=>{ drag.active=false; save(); render(); });
 }
 function splitAtPlayhead(){
   const b=dayBlocks().find(x=>x.start<playhead && bEnd(x)>playhead);
@@ -1801,8 +1852,7 @@ function startSeamDrag(i,e){
   e.preventDefault(); const bl=dayBlocks(); const a=bl[i], c=bl[i+1]; if(!a||!c)return;
   drag.active=true; const min=S().snapMin*60000;
   const move=ev=>{ let ms=snapMs(yToMs(ev.clientY)); ms=Math.max(a.start+min,Math.min(bEnd(c)-min,ms)); a.end=ms; c.start=ms; renderTimeline(); renderTotals(); };
-  const up=()=>{ drag.active=false; document.removeEventListener('mousemove',move); document.removeEventListener('mouseup',up); save(); render(); };
-  document.addEventListener('mousemove',move); document.addEventListener('mouseup',up);
+  trackDrag(e,move,()=>{ drag.active=false; save(); render(); });
 }
 function startDraw(e){
   e.preventDefault(); const t0=snapMs(yToMs(e.clientY)); drag.active=true;
@@ -1815,12 +1865,12 @@ function startDraw(e){
   const move=ev=>{ let t1=snapMs(yToMs(ev.clientY)); t1=Math.max(lo,Math.min(hi,t1));
     const s=Math.min(t0,t1), en=Math.max(t0,t1);
     g.style.top=((minOfDay(s)-curWinStart)*PPM)+'px'; g.style.height=((en-s)/60000*PPM)+'px'; };
-  const up=ev=>{ drag.active=false; g.style.display='none'; document.removeEventListener('mousemove',move); document.removeEventListener('mouseup',up);
+  trackDrag(e,move,(ev,cancelled)=>{ drag.active=false; g.style.display='none';
+    if(cancelled) return;                          // the browser took the gesture to scroll
     let t1=snapMs(yToMs(ev.clientY)); t1=Math.max(lo,Math.min(hi,t1));
     const s=Math.min(t0,t1), en=Math.max(t0,t1);
     if(en-s>=S().snapMin*60000){ const b={id:uid('b'),start:s,end:en,positionId:null,description:''}; state.blocks.push(b); selectedId=b.id; save(); render(); }
-  };
-  document.addEventListener('mousemove',move); document.addEventListener('mouseup',up);
+  });
 }
 
 /* ============================ navigation & toolbar ============================ */

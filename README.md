@@ -48,6 +48,11 @@ Append `?demo` to the URL — [live](https://moltaire.github.io/projector/?demo)
 
 ## notes
 
+The timeline runs on pointer events, so blocks, seams and the marker drag under a finger as
+well as a mouse. Dragging a block's *body* on a touch screen scrolls instead — move its
+boundaries on the seams. Where there is no hover, the merge button shows on the seams around
+the selected block, and the block's card carries its own *Verbinden / Merge*.
+
 Data lives in `localStorage` per browser, so it does not sync between devices — move it with the JSON backup in *Einstellungen*. Clearing site data erases it.
 
 Installing it to an iOS home screen gives the app its **own storage bucket**: it starts empty even though the same URL in Safari is full of days. The empty state offers the JSON import to seed it.

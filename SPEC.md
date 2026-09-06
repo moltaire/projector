@@ -268,6 +268,27 @@ optimised as an inbox-zero loop over the day's unlabeled blocks.
 - The mobile overrides are the **last** rules in the stylesheet: media queries add no
   specificity, so source order is what makes them win.
 
+**Touch** — the timeline is driven by **pointer events**, so a finger, a mouse and a pen run
+the same code. Three things this costs beyond the rename:
+- A drag is captured on the timeline (it survives leaving the element) and **`pointercancel`
+  ends it like an up**, since the browser claims a gesture the moment it decides to scroll. A
+  cancelled gesture must not be read as a completed one: it neither selects the block nor
+  draws the one being dragged out.
+- Every drag surface sets **`touch-action: none`** — a vertical drag is also the scroll
+  gesture, and `preventDefault()` on `pointerdown` does not win that argument. Blocks
+  deliberately keep the scroller's `touch-action`: dragging a block's *body* pans the
+  timeline, and its boundaries are moved on the seams instead. It is the only gesture given
+  up, and the one with a keyboard-free replacement already in the editor card.
+- Affordances that only existed on `:hover` are pinned down under `@media (hover:none)`: the
+  seam's **merge button appears on the seams around the selected block** (all of them at once
+  would be a column of buttons), and the marker and seam hit strips grow to a finger. The
+  block **resize strips stay small** — a 15-min block is 22 px tall, so a finger-sized handle
+  would swallow the block it belongs to; the track is gapless, so every interior edge is also
+  a seam.
+- **Merge** was the one editing verb with no route but the `m` key and that hover button, so
+  the selected-block card gained a **Merge** button beside Split and Delete — without it half
+  of the §2 grammar was unreachable on a phone.
+
 **Long names** — real project and work-package names are long, so a block's label is two
 spans: the *project* prefix carries `flex-shrink: 9999` and the work package `1`, meaning the
 project gives up all its width before the package loses a character. Hotkey chips show the
