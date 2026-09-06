@@ -32,7 +32,7 @@ The name is the same joke as *Projectile* (project + suffix), minus the ordnance
 | `⇥` / `⇧⇥` | next / previous block |
 | `⇥` | inside a Themenarbeit block: Hub → PEG → description |
 | `p` | position quick-pick |
-| `c` / `v` | copy the position, text and tags — paste them onto the block at the marker |
+| `c` / `v` | copy the position, text and tags — paste them onto the selected block |
 | `s` | split block at the marker |
 | `m` | merge with neighbour |
 | `del` | delete block |

@@ -498,7 +498,7 @@ const I18N={
     wgTag:'Hub', prjTag:'PEG', wgPh:'HUB',
     noWgWarn:n=>`${n} Themenarbeit block${n>1?'s':''} without a Hub.`,
     scTagTab:'Hub → PEG → description',
-    scCopyLabel:'Copy position, text and tags', scPasteLabel:'Paste them onto the block at the marker',
+    scCopyLabel:'Copy position, text and tags', scPasteLabel:'Paste them onto the selected block',
     tLabelCopied:l=>`Copied: ${l}`, tLabelPasted:l=>`Pasted: ${l}`,
     tNothingCopied:'Nothing copied yet — press c on a block first.',
     tNothingToCopy:'This block has no position and no text to copy.',
@@ -625,7 +625,7 @@ const I18N={
     wgTag:'Hub', prjTag:'PEG', wgPh:'HUB',
     noWgWarn:n=>`${n} Themenarbeit-${n>1?'Blöcke':'Block'} ohne Hub.`,
     scTagTab:'Hub → PEG → Beschreibung',
-    scCopyLabel:'Position, Text und Tags kopieren', scPasteLabel:'Auf den Block am Marker übertragen',
+    scCopyLabel:'Position, Text und Tags kopieren', scPasteLabel:'Auf den ausgewählten Block übertragen',
     tLabelCopied:l=>`Kopiert: ${l}`, tLabelPasted:l=>`Eingefügt: ${l}`,
     tNothingCopied:'Noch nichts kopiert — erst c auf einem Block drücken.',
     tNothingToCopy:'Dieser Block hat weder Position noch Text zum Kopieren.',
@@ -2245,7 +2245,11 @@ function copyLabel(){
 }
 function pasteLabel(){
   if(!clip){ toast(t('tNothingCopied')); return; }
-  const b=blockAtMarker()||selectedBlock();      // the marker wins; the selection is the fallback
+  // The *selection* wins, with the marker as the fallback. Everything else that edits a
+  // block (0-9, Enter, Delete, Tab) acts on the selection, and the marker is placed for you
+  // — noon on any past day — so letting it win meant v silently relabeled a block that was
+  // never chosen while the selected one sat untouched.
+  const b=selectedBlock()||blockAtMarker();
   if(!b){ toast(t('tMoveMarker')); return; }
   b.positionId=clip.positionId;
   b.description=clip.description;
