@@ -2942,15 +2942,20 @@ function demoData(){
   ];
 
   // Walk back over the last three weeks of weekdays; today only up to the current time.
+  // The last seven days are filled whatever the weekday, so opening the demo on a Sunday
+  // still lands on a day with blocks on it.
   const mid=todayMid(), nowMs=Date.now();
   const days=[];
   for(let i=20;i>=0;i--){
     const dm=mid-i*DAY;
-    if(isWeekday(dm)) days.push(dm);
+    if(isWeekday(dm)||i<7) days.push(dm);
   }
+  let wd=-1;
   days.forEach((dm,i)=>{
-    // ...including one half day, so the fractional target has something to show.
-    const off={4:{t:'vacation',f:0.5},9:'sick',12:'holiday'}[i];
+    // ...including one half day, so the fractional target has something to show. Counted in
+    // weekdays, so the weekend days of the last week cannot shift a day off onto a Saturday.
+    if(isWeekday(dm)) wd++;
+    const off=isWeekday(dm)?{4:{t:'vacation',f:0.5},9:'sick',12:'holiday'}[wd]:null;
     if(off){ d.dayTypes[isoDate(dm)]=off; return; }           // a day off stays empty
     scripts[i%scripts.length].forEach(([from,to,pos,desc,tags])=>{
       const start=at(dm,from), end=at(dm,to);

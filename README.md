@@ -44,7 +44,7 @@ The name is the same joke as *Projectile* (project + suffix), minus the ordnance
 
 ## try it
 
-Append `?demo` to the URL — [live](https://moltaire.github.io/projector/?demo), or `index.html?demo` locally. That runs the app against a **separate storage key** with three weeks of sample data: a Themenarbeit code with a full Hub/PEG tree, a Themenarbeit code without sub-positions, two factura projects, a per-block PEG override, a missing Hub, an unlabeled block, a late break and the three kinds of day off. Your real days live under a different key and are never read or written in demo mode. The **Demo** badge in the header resets the sample data.
+Append `?demo` to the URL — [live](https://moltaire.github.io/projector/?demo), or `index.html?demo` locally. That runs the app against a **separate storage key** with three weeks of sample data: a Themenarbeit code with a full Hub/PEG tree, a Themenarbeit code without sub-positions, two factura projects, a per-block PEG override, a missing Hub, an unlabeled block, a late break and the three kinds of day off. Weekdays are filled across all three weeks and the last seven days are filled whatever the weekday, so the demo always opens onto a day with something on it. Your real days live under a different key and are never read or written in demo mode. The **Demo** badge in the header resets the sample data.
 
 ## notes
 
