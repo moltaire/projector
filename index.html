@@ -390,6 +390,7 @@
   <div class="toolbar">
     <button class="btn outline" id="proj-btn">Übertragen</button>
     <button class="btn outline" id="ics-btn">Kalender-Export</button>
+    <button class="btn outline" id="bk-btn">Sicherung</button>
     <span class="tb-sep"></span>
     <button class="btn outline" id="pos-btn">Positionen</button>
     <button class="btn outline" id="data-btn">Einstellungen</button>
@@ -535,6 +536,7 @@ const I18N={
     tBackupRestored:'Backup restored', tNotBackup:'Not a valid backup', tInvalidJson:'Invalid JSON',
     tLabelReq:'Label required', tNothingExport:'Nothing to export for this day', tCalExported:d=>`Calendar exported: ${d}`,
     btnTransfer:'Transfer', btnCalendar:'Calendar export', btnSettings:'Settings',
+    btnBackup:'Backup', ttBackup:'Download a dated .json of everything — import it again under Settings',
     ttTransferDay:d=>`Hand ${d} over to Projectile, cell by cell`,
     ttCalendarDay:d=>`Write ${d} to a .ics file`,
     ttDayOnly:'Day view only — both act on the single day you are looking at.',
@@ -662,6 +664,7 @@ const I18N={
     tBackupRestored:'Sicherung wiederhergestellt', tNotBackup:'Keine gültige Sicherung', tInvalidJson:'Ungültiges JSON',
     tLabelReq:'Bezeichnung erforderlich', tNothingExport:'Für diesen Tag gibt es nichts zu exportieren', tCalExported:d=>`Kalender exportiert: ${d}`,
     btnTransfer:'Übertragen', btnCalendar:'Kalender-Export', btnSettings:'Einstellungen',
+    btnBackup:'Sicherung', ttBackup:'Datiertes .json von allem herunterladen — Import unter Einstellungen',
     ttTransferDay:d=>`${d} Zelle für Zelle nach Projectile übertragen`,
     ttCalendarDay:d=>`${d} als .ics-Datei schreiben`,
     ttDayOnly:'Nur in der Tagesansicht — beide beziehen sich auf den einen Tag, den du siehst.',
@@ -1194,6 +1197,8 @@ function renderHeader(){
   el('pos-btn').textContent=t('positions');
   el('data-btn').textContent=t('btnSettings');
   el('ics-btn').textContent=t('btnCalendar');
+  el('bk-btn').textContent=t('btnBackup');
+  el('bk-btn').title=t('ttBackup');
   el('proj-btn').textContent=t('btnTransfer');
   // Both act on exactly one day, so they are only offered where a single day is on screen.
   // Nothing about them said so, and in month view the selected day is not even visible.
@@ -1827,6 +1832,11 @@ el('today-btn').onclick=()=>{ selectedDate=new Date(todayMid()); selectedId=null
 el('pos-btn').onclick=openPositions;
 el('data-btn').onclick=openData;
 el('ics-btn').onclick=exportICS;
+// The backup is the one thing that guards against losing everything to a cleared browser,
+// so it is taken often and does not belong two clicks deep in a settings dialog. It is a
+// plain download with no dialog; the matching import stays in Settings, where a rare and
+// destructive action belongs.
+el('bk-btn').onclick=exportBackup;
 el('proj-btn').onclick=openExport;
 el('help-btn').onclick=openShortcuts;
 el('m-toggle').onclick=()=>{ document.body.classList.toggle('show-rail'); renderHeader(); };

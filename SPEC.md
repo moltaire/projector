@@ -277,6 +277,12 @@ short `code` instead, with the full path in the tooltip.
 - Primary store: **localStorage** for v1 (small data; swap to IndexedDB later behind the
   same storage interface).
 - One-click **JSON backup export / import** (the §3 envelope).
+- The **export sits in the header toolbar**, not inside Settings: it is the only guard against
+  a cleared browser, so it is taken often and a rare-action dialog is the wrong place for it.
+  The **import** stays in Settings — it is rare, and it replaces everything.
+- Backup and calendar files are **named with a date** (`projector-backup-YYYY-MM-DD.json`,
+  `projector-YYYY-MM-DD.ics`), built from the *local* calendar fields: `toISOString()` would
+  convert local midnight to UTC first and stamp a CEST day's file with the day before.
 - UI note that data lives in the browser; nudge periodic backup.
 
 ### 4.9 Export
