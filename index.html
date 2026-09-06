@@ -752,13 +752,18 @@ function fromHsl(hu,sa,l){
   return toHex(seg.map(v=>(v+m)*255));
 }
 
-const THEME_DEFAULT={bg:'#1c1b22',text:'#e5e5e5',accent:'#757c58'};
+const THEME_DEFAULT={bg:'#15151a',text:'#e6e6e8',accent:'#8b8b96'};
+/* Two neutral themes that get out of the way, and two borrowed from editors — the app is
+   stared at all day next to one. A near-grey accent is safe here: --intern is built from a
+   *fixed* saturation (see applyTheme), so the Factura/Intern split survives an accent with
+   no chroma of its own. */
 const THEME_PRESETS=[
-  {n:'Olive', bg:'#1c1b22', text:'#e5e5e5', accent:'#757c58'},
-  {n:'Slate', bg:'#161a20', text:'#e3e8ee', accent:'#4a6fa5'},
-  {n:'Plum',  bg:'#1e1a22', text:'#e9e3ea', accent:'#8a5f86'},
-  {n:'Ember', bg:'#1f1b19', text:'#ece5df', accent:'#a2603c'},
-  {n:'Paper', bg:'#f2f0e9', text:'#23221e', accent:'#636f45'}
+  {n:'Minimal dark',  bg:'#15151a', text:'#e6e6e8', accent:'#8b8b96'},
+  {n:'Minimal light', bg:'#f7f7f5', text:'#1b1b1e', accent:'#5b5b64'},
+  // Tomorrow Night Eighties, pulled a shade apart: its own #2d2d2d/#cccccc leaves --dim at
+  // 3.5:1 on the card, and --dim carries the hour labels and every block's meta line.
+  {n:'Tomorrow 80s',  bg:'#252525', text:'#eaeaea', accent:'#f99157'},
+  {n:'Dracula',       bg:'#282a36', text:'#f8f8f2', accent:'#bd93f9'}
 ];
 // Everything is derived from three inputs by mixing toward the *opposite* end of the
 // bg/text axis, so a light background produces a light theme automatically and no

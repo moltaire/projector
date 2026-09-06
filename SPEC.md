@@ -249,9 +249,15 @@ optimised as an inbox-zero loop over the day's unlabeled blocks.
   surfaces) is *derived* by mixing along the bg↔text axis, so a light background yields a
   light theme automatically and no combination can render text illegible.
   `--dim` uses an **asymmetric mix weight** (0.30 on light backgrounds, 0.40 on dark) because
-  perceptual luminance is non-linear; all five presets clear **WCAG AA (≥4.5)** on
-  text-on-bg, dim-on-card and on-accent. Presets: Olive (default), Slate, Plum, Ember, Paper
-  (light). Reset restores the default. Status colours (focus/break/rest) stay fixed —
+  perceptual luminance is non-linear; all four presets clear **WCAG AA (≥4.5)** on
+  text-on-bg, dim-on-card and on-accent. Presets: **Minimal dark** (default), **Minimal
+  light**, **Tomorrow 80s**, **Dracula** — two neutral themes that get out of the way and two
+  borrowed from editors, since the app sits next to one all day. The neutral pair proves the
+  derivation holds for an accent with no chroma: `--intern` is built at a *fixed* saturation,
+  so the Factura/Intern split survives a grey accent. Tomorrow Night Eighties is pulled one
+  shade apart from its own `#2d2d2d`/`#cccccc`, which would leave `--dim` at 3.5:1 on the
+  card — and `--dim` carries the hour labels and every block's meta line. Reset restores the
+  default. Status colours (focus/break/rest) stay fixed —
   they're semantic.
 
 **Narrow screens (≤820 px)** — mobile is not first-class but must be usable:
