@@ -2187,7 +2187,7 @@ function openData(){
     S().exportCols=[...el('modal').querySelectorAll('[data-col]')].filter(x=>x.checked).map(x=>x.dataset.col);
     save();
   });
-  el('bk-exp').onclick=()=>download('projector-backup.json',JSON.stringify(state,null,2));
+  el('bk-exp').onclick=exportBackup;
   el('bk-imp').onclick=()=>importFile(data=>{ if(data&&data.blocks&&data.positions){ state=data; lang=S().lang||lang; save(); closeModal(); render(); toast(t('tBackupRestored')); } else toast(t('tNotBackup')); });
   el('bk-close').onclick=closeModal;
 }
@@ -2776,7 +2776,7 @@ function exportICS(){
     ics+='BEGIN:VEVENT\r\n'+`UID:${b.id}@projector\r\n`+`DTSTART:${dtICS(b.start)}\r\n`+`DTEND:${dtICS(b.end)}\r\n`+`SUMMARY:${sum.replace(/[\r\n]/g,' ')}\r\n`+'END:VEVENT\r\n';
   });
   ics+='END:VCALENDAR\r\n';
-  const name='projector-'+new Date(dayStartMs()).toISOString().slice(0,10)+'.ics';
+  const name='projector-'+isoDate(dayStartMs())+'.ics';
   download(name,ics,'text/calendar');
   toast(t('tCalExported',new Date(dayStartMs()).toLocaleDateString(loc(),{weekday:'short',day:'2-digit',month:'short'})));
 }
@@ -2785,6 +2785,12 @@ function exportICS(){
 function openModal(html,cls){ const m=el('modal'); m.className='modal'+(cls?' '+cls:''); m.innerHTML=html; el('overlay').style.display='flex'; }
 function closeModal(){ el('overlay').style.display='none'; xstate=null; qp=null; }
 el('overlay').addEventListener('mousedown',e=>{ if(e.target===el('overlay')) closeModal(); });
+/* The backup is taken often and kept, so the file has to say *when* — an overwritten
+   projector-backup.json in the download folder is not a backup. Stamped with today, in
+   local time (isoDate, not toISOString, which would name a CEST evening's file yesterday). */
+function exportBackup(){
+  download('projector-backup-'+isoDate(Date.now())+'.json',JSON.stringify(state,null,2));
+}
 function download(name,text,type='application/json'){
   const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([text],{type})); a.download=name; a.click(); URL.revokeObjectURL(a.href);
 }
